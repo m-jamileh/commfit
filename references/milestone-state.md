@@ -53,9 +53,9 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 **Delivered:** 2026-05-20
 **Approved:** —
 
-**Branch merged:** `feat/m2-platform-and-deployment` → `dev` (fast-forward, commit `ed8c52e`).
+**Branch merged:** `feat/m2-platform-and-deployment` → `dev` (fast-forward, commit `ed8c52e`; follow-up fix-up cherry-picked, commit `0fbc154`).
 
-**Deliverables (all on disk, SHA `ed8c52e`):**
+**Deliverables (all on disk, SHA `ed8c52e` + follow-up fix-up `0fbc154`):**
 
 *M1 follow-ups resolved:*
 - Root `package.json` — `packageManager: "pnpm@9.15.4+sha512..."` field present
@@ -116,6 +116,13 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 - No real third-party SDK was activated (Sentry is DSN-gated; mocks remain in place for Stripe/DocuSign/etc per locked decisions).
 - No AI dependencies introduced (no `@anthropic-ai/sdk`, no `openai` in `pnpm-lock.yaml`).
 - Fast-forward merged into `dev`.
+
+**Follow-up fix-up verification (CTO, 2026-05-20, SHA `0fbc154`):**
+- `git show --stat 0fbc154`: 25 files changed, 440 insertions / 57 deletions; only ESLint flat-config rename (`.js` → `.mjs`), `apps/api` adds `@nestjs/swagger` + workspace deps it was already importing, `next lint` → `eslint .` (Next.js 15 deprecated `next lint`), jest `--passWithNoTests` on api/worker, `.gitignore` adds `next-env.d.ts` + `*.tsbuildinfo`, and `pnpm-lock.yaml` regen.
+- `no-namespace` rule gains `allowDeclarations: true` — legitimately required by `apps/api/src/common/middleware/scope.middleware.ts` (M1) which uses `declare global { namespace Express { ... } }` to extend `Request` with `tenantScope`. Verified in file.
+- `pnpm-lock.yaml` diff inspected: only adds `@commfit/db`, `@commfit/shared-types` (workspace links) and `@nestjs/swagger` to the api importer. No AI deps, no real third-party SDKs.
+- Cherry-picked onto `dev` (milestone-state.md kept at dev's version; resolved cleanly).
+- All other deliverables from `ed8c52e` untouched.
 
 **Definition of Done:**
 - `pnpm dev` (or `docker-compose up`) brings up the full local environment cleanly. ✓ (compose file present; founder will run during M4 smoke.)
