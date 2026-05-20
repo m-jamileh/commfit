@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { mockJobs, mockInvoices, mockTechnicians, mockEquipment } from "../lib/mock-data";
+import { mockTechnicians, mockEquipment } from "../lib/mock-data";
 
 export interface MonthlyJobsData {
   month: string;

@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { Card } from "../components/card";
 import { Button } from "../components/button";
 import { Input } from "../components/input";

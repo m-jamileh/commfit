@@ -1,5 +1,4 @@
 import * as React from "react";
-import { MapPin } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface MapPin {
@@ -15,14 +14,6 @@ interface MapPreviewProps {
   className?: string;
   label?: string;
 }
-
-const PIN_COLORS = {
-  accent: "text-accent",
-  success: "text-success",
-  warning: "text-warning",
-  info: "text-info",
-  danger: "text-danger",
-};
 
 const DEFAULT_PINS: MapPin[] = [
   { id: "1", x: 22, y: 35, color: "success", label: "Watters Creek" },
