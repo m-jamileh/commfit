@@ -48,10 +48,10 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 
 ## M2 — Platform & Deployment
 **Owner:** DevOps / Platform Engineer
-**Status:** in_review
+**Status:** done
 **Started:** 2026-05-20
 **Delivered:** 2026-05-20
-**Approved:** —
+**Approved:** 2026-05-20
 
 **Branch merged:** `feat/m2-platform-and-deployment` → `dev` (fast-forward, commit `ed8c52e`; follow-up fix-up cherry-picked, commit `0fbc154`).
 
