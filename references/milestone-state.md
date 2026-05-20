@@ -1,6 +1,6 @@
 # Milestone State
 
-Last updated: 2026-05-20 (M1 done / M2 in_review)
+Last updated: 2026-05-20 (M1 done / M2 done / M3 Backend in_review + Frontend in_review — joint smoke pending)
 
 ## M1 — Architecture & Contracts
 **Owner:** Principal Architect
@@ -236,6 +236,21 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - Login — `apps/customer/app/login/page.tsx`
 
 **Typecheck:** all four packages/apps pass `tsc --noEmit` with zero errors.
+
+**Status:** in_review (CTO Type C verified; awaiting joint local smoke before M3 → `in_review` overall).
+**Branch merged:** `feat/m3-frontend-ui-package` → `dev` (no-ff merge `07f576f`, pushed to `origin/dev`).
+**Tracking issue:** [COM-12](/COM/issues/COM-12).
+
+**Type C verification (CTO, 2026-05-20):**
+- `git log --oneline origin/dev..origin/feat/m3-frontend-ui-package`: 2 commits (`ba23aa2` → `b482a51`), both carry the `Co-Authored-By: Paperclip` footer.
+- `git show --stat ba23aa2`: **103 files changed, 8,748 insertions / 123 deletions** — every claimed path present (17 primitives, 10 domain components, 11 query hooks, mock seed, auth/supabase/query-client libs, 15 ops screens, 6 tech screens + PWA manifest/sw.js, 7 customer screens, Tailwind preset + globals.css/tailwind.config across all three apps).
+- `git diff ba23aa2~1 ba23aa2 --name-only` for `apps/api/**`, `apps/worker/**`, `packages/db/**`, `packages/shared-types/**`: **empty** — Frontend slice did not touch any backend path (slice boundary respected).
+- `pnpm-lock.yaml` diff grep for `anthropic` / `openai` / `@anthropic` / `claude-sdk`: **0 matches** (AI-free constraint upheld). New deps are `@supabase/ssr`, `@supabase/supabase-js`, `@tanstack/react-query`, `lucide-react`, `recharts`, `@radix-ui/*`, `tailwindcss`, `postcss`, `autoprefixer` — all expected for the design system.
+- End-to-end reads: `packages/ui/src/tokens.ts` (brand palette `#F7F5F0` / `#16314D` / `#C3551A` matches locked spec), `packages/config/tailwind.preset.ts` (colors mirror tokens; fontFamily set to General Sans/DM Sans/Geist Mono), `packages/ui/src/index.ts` (barrel exports 17 primitives + 10 domain components + 11 hooks + tokens + auth + supabase + query-client), `packages/ui/src/lib/auth.ts` (`AppRole` union covers all 7 roles incl. customer/technician; `CommFitUser` + `parseUserRole` + `mockRoleFromEmail` for local dev), `packages/ui/src/lib/supabase.ts` (`createBrowserClient` from `@supabase/ssr`), `packages/ui/src/lib/query-client.tsx` (`CommFitQueryProvider` wraps `QueryClientProvider` with 30s stale / retry=1), `packages/ui/src/hooks/use-jobs.ts` (`useJobs` with filters + `useJob` + `useUpdateJobStatus` mutation; mock-backed — single-line swap to api-client when ready), `apps/ops/app/dispatch/page.tsx` (showpiece: KPI strip + JobsBoard kanban + TechAvailability list + ActivityFeed + MapPreview wired via `useJobs`/`useTechnicians`), `apps/tech/public/manifest.json` (PWA: `display: standalone`, theme `#16314D`, bg `#F7F5F0`, 192/512 icons), `apps/tech/public/sw.js` (install/activate/fetch handlers — minimal pass-through service worker), `apps/tech/app/sw-register.tsx` (client-side SW registration).
+- `pnpm -r typecheck` on the merged tree: **11/11 projects pass** (`shared-types`, `utils`, `api-client`, `db`, `ui`, `api`, `worker`, `ops`, `tech`, `customer`, root; one workspace project — `packages/config` — has no typecheck script and is skipped).
+- No-ff merged into `dev` as `07f576f` and pushed to `origin/dev`.
+
+**Note (carry-over from spec vs implementation):** Frontend Engineer's in_review comment mentions a `CommissionRuleEditor` domain component, but the on-disk barrel (`packages/ui/src/index.ts`) only re-exports 10 domain components. The commission-rules editor lives in the app layer at `apps/ops/app/settings/commission/page.tsx` rather than `packages/ui/src/domain/`. Not a blocker — the deliverable exists; minor surface-level inconsistency in the in_review comment.
 
 **Definition of Done (M3 as a whole):**
 - All Backend AND all Frontend deliverables exist and pass lint + type-check + tests.
