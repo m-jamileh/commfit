@@ -58,3 +58,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://commfit:commfit@localhost:5432/commfit
           REDIS_URL: redis://localhost:6379
+
+      - name: OpenAPI drift check
+        run: |
+          pnpm api:generate-spec
+          pnpm --filter @commfit/api-client generate
+          git diff --exit-code v1/openapi.json packages/api-client/src/schema.ts || \
+            (echo "OpenAPI drift detected — run 'pnpm api:regenerate' and commit." && exit 1)

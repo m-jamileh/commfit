@@ -146,30 +146,44 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 ### M3 Backend slice
 
 **Status:** in_review (CTO Type C verified; awaiting Frontend slice + joint smoke before M3 → `in_review` overall)
-**Branch merged:** `feat/m3-backend-modules-and-services` → `dev` (no-ff merge; merge commit on `dev`).
-**Branch tip SHA:** `8d72ca9` (BE in_review-record cited `9f56d15`; `8d72ca9` adds commission engine unit tests, Swagger/OpenAPI setup, and type-safety fixes on top).
+**Branch merged:** `feat/m3-backend-modules-and-services` → `dev` (two no-ff merges; latest folds in the OpenAPI delta).
+**Branch tip SHA:** `e4af65e` (OpenAPI delta on top of `8d72ca9`: adds `apps/api/src/generate-openapi.ts`, committed `v1/openapi.json`, generated `packages/api-client/src/schema.ts`, and CI drift check).
 **Tracking issue:** [COM-16](/COM/issues/COM-16) (replacement for zombie COM-11). Final closure recorded on [COM-17](/COM/issues/COM-17) due to second sticky execution lock on COM-16.
 
-**Deliverables (all present at SHA `8d72ca9`):**
+**Deliverables (all present at SHA `e4af65e`):**
 - All 15 backend modules implemented end-to-end — `/apps/api/src/modules/*/` (accounts, locations, equipment, technicians, jobs, quotes, contracts, invoices, payments, commission, parts, reports, notifications, audit, webhooks)
 - All 6 service-abstraction mock providers — `/apps/api/src/services/*/mock.*.provider.ts` (email, payment, esign, warranty, erp, crm)
 - All 5 worker queue processors — `/apps/worker/src/processors/` (email-dispatch, scheduled-pm-rollover, recurring-autopay-simulation, commission-recompute, audit-async)
 - AuditLogInterceptor + AuditInterceptor wired globally — `/apps/api/src/common/interceptors/{audit-log,audit}.interceptor.ts`
 - IdempotencyInterceptor wired globally with 24h TTL — `/apps/api/src/common/interceptors/idempotency.interceptor.ts`
 - CommissionEngineService + unit tests — `/apps/api/src/modules/commission/commission-engine.{service,spec}.ts`
-- Swagger/OpenAPI setup + `/v1/openapi.json` exposed for api-client generation — `/apps/api/src/main.ts`
+- Swagger/OpenAPI mounted live at `/v1/openapi.json` — `/apps/api/src/main.ts`
+- OpenAPI spec generator (no live infra needed) — `apps/api/src/generate-openapi.ts`
+- Committed OpenAPI 3.0 spec — `v1/openapi.json` (documents all 15 modules + health)
+- Generated api-client TypeScript schema — `packages/api-client/src/schema.ts` (re-exported via `packages/api-client/src/index.ts`)
+- CI OpenAPI drift check — `.github/workflows/ci.yml` (fails CI if `v1/openapi.json` or `schema.ts` drifts)
 - Seed scripts producing full realistic dataset — `/packages/db/src/seed/` (accounts, locations, equipment, technicians, users, jobs, parts, commission-rules, index.ts)
-- `pnpm db:seed` root script wired; `pnpm api:regenerate` root script added
+- `pnpm db:seed` root script wired; `pnpm api:regenerate` + `pnpm api:generate-spec` root scripts added
 
 **Type C verification (CTO, 2026-05-20):**
-- `git log --oneline da85f3b..origin/feat/m3-backend-modules-and-services`: 4 commits (`f7cf96d` → `9f56d15` → `b29a7a0` → `8d72ca9`), all carry the `Co-Authored-By: Paperclip` footer.
+
+Pass 1 — modules/services/seeds slice (SHA `8d72ca9`):
+- `git log --oneline da85f3b..8d72ca9`: 4 commits (`f7cf96d` → `9f56d15` → `b29a7a0` → `8d72ca9`), all carry the `Co-Authored-By: Paperclip` footer.
 - `git diff --stat da85f3b..8d72ca9`: **87 files changed, 7,210 insertions / 301 deletions**; every claimed path present (15 modules, 6 mock providers, 5 processors, 3 interceptors, 9 seed files incl. index + commission-rules).
 - End-to-end read of `apps/api/src/app.module.ts` — 15 domain modules + 6 service modules registered; `IdempotencyInterceptor` + `AuditInterceptor` + `AuditLogInterceptor` wired via `APP_INTERCEPTOR`.
 - Spot-check of `apps/api/src/modules/commission/commission-engine.service.ts` — priority-ordered rule matching, four-axis filter evaluation (techType / jobType / equipmentClass / technicianId), trace logging with `RuleTrace` struct; coherent with `commission-engine.spec.md`.
 - `pnpm-lock.yaml` grep for `@anthropic-ai/sdk` / `openai`: **0 matches** (AI-free constraint upheld).
 - Service abstractions remain mocks-only — no real third-party SDK wired (Stripe / DocuSign / Email / Warranty all behind `mock.*.provider.ts`).
 - Workspace typecheck self-reported clean (11/11 tasks) by Backend Engineer at SHA `9f56d15`; CI on the merge commit will confirm against the merged tree.
-- No-ff merged into `dev` and pushed to `origin/dev`.
+- No-ff merged into `dev` as `452091a` and pushed to `origin/dev`.
+
+Pass 2 — OpenAPI delta (SHA `e4af65e`):
+- `git show --stat 6139d24`: 8 files / 7,067 insertions — generator script, committed spec (3,342 lines), generated schema (3,627 lines), CI drift step, root `api:generate-spec` script.
+- End-to-end read of `apps/api/src/generate-openapi.ts` — bootstraps NestJS with `Test.createTestingModule({ imports: [AppModule] })`, overrides `PrismaService` with a Proxy and all 5 BullMQ queue tokens (`audit-async`, `commission-recompute`, `email-dispatch`, `scheduled-pm-rollover`, `recurring-autopay-simulation`) with a no-op mock; writes to `v1/openapi.json` without requiring Postgres/Redis. Queue names match `apps/worker/src/queues.ts`.
+- Grep of committed `v1/openapi.json` path prefixes: **all 15 module routes documented** — accounts, audit, commission, contracts, equipment, invoices, jobs, locations, notifications, parts, payments, quotes, reports, technicians, webhooks (+ health).
+- End-to-end read of `.github/workflows/ci.yml` — new `OpenAPI drift check` step runs `pnpm api:generate-spec && pnpm --filter @commfit/api-client generate && git diff --exit-code v1/openapi.json packages/api-client/src/schema.ts`; CI fails with a clear instruction (`run 'pnpm api:regenerate' and commit`) on drift.
+- `packages/api-client/src/index.ts` cleanly re-exports `paths`, `components`, `operations` from `./schema` alongside `@commfit/shared-types`.
+- No-ff merged into `dev` as the merge commit following `e924fc3` and pushed to `origin/dev`.
 
 **Note:** COM-16 hit the same sticky execution-lock pattern as COM-11 (`executionRunId 23dd20fd-b526-4b2d-a679-5ce7d3adaf49`, no active run, all writes return `Issue run ownership conflict`). Final completion record + this SHA captured on [COM-17](/COM/issues/COM-17); COM-16 left as-is.
 
