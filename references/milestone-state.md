@@ -253,7 +253,16 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - `pnpm -r typecheck` on the merged tree: **11/11 projects pass** (`shared-types`, `utils`, `api-client`, `db`, `ui`, `api`, `worker`, `ops`, `tech`, `customer`, root; one workspace project — `packages/config` — has no typecheck script and is skipped).
 - No-ff merged into `dev` as `07f576f` and pushed to `origin/dev`.
 
-**Note (carry-over from spec vs implementation):** Frontend Engineer's in_review comment mentions a `CommissionRuleEditor` domain component, but the on-disk barrel (`packages/ui/src/index.ts`) only re-exports 10 domain components. The commission-rules editor lives in the app layer at `apps/ops/app/settings/commission/page.tsx` rather than `packages/ui/src/domain/`. Not a blocker — the deliverable exists; minor surface-level inconsistency in the in_review comment.
+**Type C verification — delta pass (CTO, 2026-05-20):**
+- Delta beyond already-merged `b482a51`: 3 commits — `ef8c00c` (add Radio/Table/Toast primitives + CommissionRuleEditor domain component + session-based auth middleware for all three apps + PWA icons + TS/lint fixes), `62ca64b` (remove unused `Settings`/`Mail` icon imports that blocked `next build`), `61aa437` (milestone-state.md update). All three carry the `Co-Authored-By: Paperclip` footer.
+- `git diff --stat b482a51..origin/feat/m3-frontend-ui-package`: **24 files changed, 517 insertions / 19 deletions**.
+- Slice-boundary check (`git diff --name-only b482a51..origin/feat/m3-frontend-ui-package | grep -E '^(apps/api|apps/worker|packages/db|packages/shared-types)/'`): **empty** — backend slice boundary respected.
+- AI-free check on package.json changes in the delta: zero `package.json` changes; no new deps introduced.
+- `pnpm --filter @commfit/ops lint`, `pnpm --filter @commfit/tech lint`, `pnpm --filter @commfit/customer lint`: **all three exit 0** with no warnings (ESLint blocker that `62ca64b` removed is genuinely fixed).
+- Spot-check on new files: `packages/ui/src/components/radio.tsx` (RadioGroup + RadioGroupItem with proper React context + `role="radiogroup"`), `packages/ui/src/domain/commission-rule-editor.tsx` (real composition of Card/Button/Input/Switch/Pill/Select/Modal — 148 lines of working code), `apps/ops/middleware.ts` (Supabase SSR cookie check `commfit-ops-session`, redirect to `/login` if missing, exempts `_next`/`api`/`/login`).
+- `pnpm -r typecheck` on the merged tree (`c9bdf53`): **11/11 projects pass** (initial run flagged stale pnpm workspace links on `apps/worker` after the branch switch; `pnpm install --frozen-lockfile` re-linked them; re-run was clean — no code regression).
+- The CommissionRuleEditor carry-over note from the prior verification is **now resolved**: `ef8c00c` adds `packages/ui/src/domain/commission-rule-editor.tsx` and re-exports it from the barrel `packages/ui/src/index.ts`.
+- No-ff merged into `dev` as `c9bdf53`; about to push to `origin/dev`.
 
 **Definition of Done (M3 as a whole):**
 - All Backend AND all Frontend deliverables exist and pass lint + type-check + tests.
