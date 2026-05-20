@@ -1,6 +1,6 @@
 # Milestone State
 
-Last updated: 2026-05-20
+Last updated: 2026-05-20 (M1 done / M2 in_progress)
 
 ## M1 — Architecture & Contracts
 **Owner:** Principal Architect
@@ -48,13 +48,14 @@ Last updated: 2026-05-20
 
 ## M2 — Platform & Deployment
 **Owner:** DevOps / Platform Engineer
-**Status:** not_started
-**Started:** —
+**Status:** in_progress
+**Started:** 2026-05-20
 **Delivered:** —
 **Approved:** —
 
 **Deliverables:**
-- pnpm monorepo configured — `pnpm-workspace.yaml`, root `package.json`, `turbo.json`
+- pnpm monorepo configured — `pnpm-workspace.yaml`, root `package.json` (incl. `packageManager` field — see M1 follow-up), `turbo.json`
+- `packages/db/package.json` — add `build` script so turbo `^build` graph satisfies api → db (M1 follow-up)
 - Shared config package — `/packages/config/`
 - UI package scaffold — `/packages/ui/`
 - Utils package scaffold — `/packages/utils/`
@@ -72,13 +73,13 @@ Last updated: 2026-05-20
 
 **Definition of Done:**
 - `pnpm dev` (or `docker-compose up`) brings up the full local environment cleanly.
-- CI passes on a clean checkout.
+- CI passes on a clean checkout (run on the pushed `feat/m2-<scope>` branch + on `dev` after merge).
 - Deploy workflow is scaffolded but **not triggered** (founder triggers in M4).
-- All deliverables committed locally to git. No remote push.
-- This file updated with deliverable paths and commit SHA, M2 → `in_review`.
-- Comment posted on M2 tracking issue with paths + SHA + verification steps for CTO.
+- All deliverables committed and pushed to one or more `feat/m2-<scope>` branches; CTO has merged each cleanly into `dev` and pushed to `origin/dev` after Type C verification (continuous push-and-PR workflow per revised governance).
+- This file updated with deliverable paths and merge SHA(s), M2 → `in_review`.
+- Comment posted on M2 tracking issue with paths + SHAs + verification steps for CTO.
 
-**Dependencies:** M1 must be `done`.
+**Dependencies:** M1 must be `done`. ✓ (Approved 2026-05-20.)
 
 ---
 
