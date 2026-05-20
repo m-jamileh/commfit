@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/globals.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@commfit/ui/components",
+    "utils": "@commfit/ui/lib/utils",
+    "ui": "@commfit/ui/components/ui",
+    "lib": "@commfit/ui/lib",
+    "hooks": "@commfit/ui/hooks"
+  }
+}

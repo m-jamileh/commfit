@@ -2,14 +2,23 @@
   "name": "@commfit/shared-types",
   "version": "0.0.1",
   "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "lint": "eslint .",
+    "dev": "tsc --project tsconfig.json --watch"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "@types/node": "^22.0.0"
+    "@commfit/config": "workspace:*",
+    "typescript": "^5.7.3"
   }
 }

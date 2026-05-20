@@ -1,5 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
+import { HealthModule } from './health/health.module';
+import { AdminBullBoardModule } from './admin/bull-board.module';
+import { AdminAuthMiddleware } from './admin/admin-auth.middleware';
+import { DatabaseModule } from './database/database.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
@@ -15,12 +22,25 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
-import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+    }),
+    BullModule.forRoot({
+      connection: {
+        url: process.env.REDIS_URL ?? 'redis://localhost:6379',
+      },
+    }),
+    BullBoardModule.forRoot({
+      route: '/admin/bull-board',
+      adapter: ExpressAdapter,
+    }),
     DatabaseModule,
+    HealthModule,
+    AdminBullBoardModule,
     AccountsModule,
     LocationsModule,
     EquipmentModule,
@@ -38,4 +58,8 @@ import { DatabaseModule } from './database/database.module';
     WebhooksModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(AdminAuthMiddleware).forRoutes('/v1/admin/bull-board(.*)');
+  }
+}

@@ -11,6 +11,7 @@ node_modules/
 dist/
 build/
 out/
+packages/db/generated/
 .next/
 .turbo/
 coverage/
@@ -20,3 +21,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*.tsbuildinfo
+next-env.d.ts
