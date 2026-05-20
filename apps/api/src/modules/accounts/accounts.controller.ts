@@ -10,9 +10,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  AccountResponseDto,
+  CreateAccountDto,
+  UpdateAccountDto,
+} from '@commfit/shared-types';
 import { AccountsService } from './accounts.service';
-
-const NOT_IMPLEMENTED = { statusCode: 501, message: 'Not implemented' };
 
 @ApiTags('accounts')
 @Controller('accounts')
@@ -21,32 +24,36 @@ export class AccountsController {
 
   @Get()
   @ApiOperation({ summary: 'List all accounts' })
-  findAll(): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  findAll(): Promise<AccountResponseDto[]> {
+    return this.accountsService.findAll();
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create an account' })
-  create(@Body() _body: unknown): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  create(@Body() body: CreateAccountDto): Promise<AccountResponseDto> {
+    return this.accountsService.create(body);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get an account by ID' })
-  findOne(@Param('id') _id: string): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  findOne(@Param('id') id: string): Promise<AccountResponseDto> {
+    return this.accountsService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an account' })
-  update(@Param('id') _id: string, @Body() _body: unknown): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateAccountDto,
+  ): Promise<AccountResponseDto> {
+    return this.accountsService.update(id, body);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive an account' })
-  archive(@Param('id') _id: string): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  archive(@Param('id') id: string): Promise<AccountResponseDto> {
+    return this.accountsService.archive(id);
   }
 }
