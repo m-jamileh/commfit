@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "@commfit/shared-types": ["../../packages/shared-types/dist"],
+      "@commfit/shared-types/*": ["../../packages/shared-types/dist/*"],
+      "@commfit/db": ["../../packages/db/dist"],
+      "@commfit/db/*": ["../../packages/db/dist/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}
