@@ -4,10 +4,10 @@ Last updated: 2026-05-20
 
 ## M1 — Architecture & Contracts
 **Owner:** Principal Architect
-**Status:** in_review
+**Status:** done
 **Started:** 2026-05-20
 **Delivered:** 2026-05-20
-**Approved:** —
+**Approved:** 2026-05-20
 
 **Branch merged:** `feat/m1-architecture-and-contracts` → `dev` (fast-forward, commit `687f2aa`, pushed to `origin/dev`).
 
