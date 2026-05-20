@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "generate:openapi": "ts-node -r tsconfig-paths/register src/generate-openapi.ts"
   },
   "dependencies": {
     "@bull-board/api": "^6.6.3",
