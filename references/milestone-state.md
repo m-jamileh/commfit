@@ -264,6 +264,12 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - The CommissionRuleEditor carry-over note from the prior verification is **now resolved**: `ef8c00c` adds `packages/ui/src/domain/commission-rule-editor.tsx` and re-exports it from the barrel `packages/ui/src/index.ts`.
 - No-ff merged into `dev` as `c9bdf53`; about to push to `origin/dev`.
 
+**Type C verification — CI lint cleanup ([COM-18](/COM/issues/COM-18), CTO, 2026-05-20):**
+- Founder noted on COM-6 that CI was red on `dev` post-merge due to 7 ESLint `no-unused-vars` errors in `packages/ui`. CTO opened [COM-18](/COM/issues/COM-18) (lint cleanup) assigned to Frontend Engineer.
+- Branch `feat/m3-frontend-lint-cleanup` tip `52b60fd4` removes the 7 unused imports/consts across 6 files (`pill.tsx` VariantProps, `commission-rule-editor.tsx` Pencil, `job-card.tsx` MapPin, `map-preview.tsx` lucide MapPin + PIN_COLORS const, `visit-card.tsx` Wrench, `use-reports.ts` mockJobs/mockInvoices). 6 files / 5+ / 14-.
+- Verified: `git ls-remote` + `git cat-file -t 52b60fd4` confirm SHA on origin. `pnpm --filter @commfit/ui lint` exits 0 (zero errors), `pnpm --filter @commfit/ui typecheck` clean, `pnpm -r typecheck` on merged tree 11/11 green. GitHub Actions CI run #21 (https://github.com/m-jamileh/commfit/actions/runs/26196716794) **completed / success** on SHA `52b60fd4`.
+- No-ff merged into `dev`; will push to `origin/dev` with this record.
+
 **Definition of Done (M3 as a whole):**
 - All Backend AND all Frontend deliverables exist and pass lint + type-check + tests.
 - Local end-to-end smoke: `pnpm dev` brings up everything, the three apps load, login works, demo seed flows exercisable.
