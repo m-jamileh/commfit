@@ -16,7 +16,6 @@ import {
   ScrollText,
   Percent,
   Mail,
-  Settings,
 } from "lucide-react";
 import {
   Sidebar,

@@ -1,5 +1,5 @@
 "use client";
-import { Mail, Paperclip, Clock } from "lucide-react";
+import { Paperclip, Clock } from "lucide-react";
 import { PageHeader, Card, Pill } from "@commfit/ui";
 
 interface EmailMessage {
