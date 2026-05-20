@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CheckCircle2, Clock, Wrench, Package } from "lucide-react";
+import { CheckCircle2, Clock, Package } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Pill } from "../components/pill";
 import { UserAvatar } from "../components/avatar";

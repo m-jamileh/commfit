@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Clock, User, MapPin, AlertCircle } from "lucide-react";
+import { Clock, User, AlertCircle } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Pill } from "../components/pill";
 import type { JobStatus, JobType, JobPriority } from "@commfit/shared-types";
