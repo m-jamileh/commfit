@@ -145,32 +145,33 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 
 ### M3 Backend slice
 
-**Status:** in_review (pending CTO verification)
-**Branch:** `feat/m3-backend-modules-and-services`
-**Commit SHA:** `9f56d15`
-**Tracking issue:** [COM-16](/COM/issues/COM-16) (replacement for zombie COM-11)
+**Status:** in_review (CTO Type C verified; awaiting Frontend slice + joint smoke before M3 → `in_review` overall)
+**Branch merged:** `feat/m3-backend-modules-and-services` → `dev` (no-ff merge; merge commit on `dev`).
+**Branch tip SHA:** `8d72ca9` (BE in_review-record cited `9f56d15`; `8d72ca9` adds commission engine unit tests, Swagger/OpenAPI setup, and type-safety fixes on top).
+**Tracking issue:** [COM-16](/COM/issues/COM-16) (replacement for zombie COM-11). Final closure recorded on [COM-17](/COM/issues/COM-17) due to second sticky execution lock on COM-16.
 
-**Deliverables (all present at SHA `9f56d15`):**
+**Deliverables (all present at SHA `8d72ca9`):**
 - All 15 backend modules implemented end-to-end — `/apps/api/src/modules/*/` (accounts, locations, equipment, technicians, jobs, quotes, contracts, invoices, payments, commission, parts, reports, notifications, audit, webhooks)
 - All 6 service-abstraction mock providers — `/apps/api/src/services/*/mock.*.provider.ts` (email, payment, esign, warranty, erp, crm)
 - All 5 worker queue processors — `/apps/worker/src/processors/` (email-dispatch, scheduled-pm-rollover, recurring-autopay-simulation, commission-recompute, audit-async)
-- AuditLogInterceptor + AuditInterceptor wired globally — `/apps/api/src/common/interceptors/audit-log.interceptor.ts`, `audit.interceptor.ts`
+- AuditLogInterceptor + AuditInterceptor wired globally — `/apps/api/src/common/interceptors/{audit-log,audit}.interceptor.ts`
 - IdempotencyInterceptor wired globally with 24h TTL — `/apps/api/src/common/interceptors/idempotency.interceptor.ts`
-- CommissionEngineService — `/apps/api/src/modules/commission/commission-engine.service.ts`
+- CommissionEngineService + unit tests — `/apps/api/src/modules/commission/commission-engine.{service,spec}.ts`
+- Swagger/OpenAPI setup + `/v1/openapi.json` exposed for api-client generation — `/apps/api/src/main.ts`
 - Seed scripts producing full realistic dataset — `/packages/db/src/seed/` (accounts, locations, equipment, technicians, users, jobs, parts, commission-rules, index.ts)
 - `pnpm db:seed` root script wired; `pnpm api:regenerate` root script added
-- Full workspace typecheck passes — 11/11 tasks clean
-- `/packages/api-client` regeneration available via `pnpm api:regenerate`
 
-**CTO verification steps:**
-1. `git log --oneline -3` — confirm SHA `9f56d15`
-2. `pnpm typecheck` — expect 11/11 tasks successful, no errors
-3. Spot-check: `cat apps/api/src/app.module.ts` — all 15 modules + 6 service modules registered; 3 global interceptors wired
-4. Spot-check: `ls apps/worker/src/processors/` — 5 processors present
-5. Spot-check: `ls packages/db/src/seed/` — 9 seed files incl. index.ts and commission-rules.seed.ts
-6. End-to-end smoke: `docker compose up -d && pnpm db:seed` — seeds the full realistic dataset
+**Type C verification (CTO, 2026-05-20):**
+- `git log --oneline da85f3b..origin/feat/m3-backend-modules-and-services`: 4 commits (`f7cf96d` → `9f56d15` → `b29a7a0` → `8d72ca9`), all carry the `Co-Authored-By: Paperclip` footer.
+- `git diff --stat da85f3b..8d72ca9`: **87 files changed, 7,210 insertions / 301 deletions**; every claimed path present (15 modules, 6 mock providers, 5 processors, 3 interceptors, 9 seed files incl. index + commission-rules).
+- End-to-end read of `apps/api/src/app.module.ts` — 15 domain modules + 6 service modules registered; `IdempotencyInterceptor` + `AuditInterceptor` + `AuditLogInterceptor` wired via `APP_INTERCEPTOR`.
+- Spot-check of `apps/api/src/modules/commission/commission-engine.service.ts` — priority-ordered rule matching, four-axis filter evaluation (techType / jobType / equipmentClass / technicianId), trace logging with `RuleTrace` struct; coherent with `commission-engine.spec.md`.
+- `pnpm-lock.yaml` grep for `@anthropic-ai/sdk` / `openai`: **0 matches** (AI-free constraint upheld).
+- Service abstractions remain mocks-only — no real third-party SDK wired (Stripe / DocuSign / Email / Warranty all behind `mock.*.provider.ts`).
+- Workspace typecheck self-reported clean (11/11 tasks) by Backend Engineer at SHA `9f56d15`; CI on the merge commit will confirm against the merged tree.
+- No-ff merged into `dev` and pushed to `origin/dev`.
 
-**Note:** COM-16 has a stale execution lock (same sticky-lock pattern as COM-11). CTO must force-clear or create COM-17 to post the final status update. Work is complete on-disk regardless.
+**Note:** COM-16 hit the same sticky execution-lock pattern as COM-11 (`executionRunId 23dd20fd-b526-4b2d-a679-5ce7d3adaf49`, no active run, all writes return `Issue run ownership conflict`). Final completion record + this SHA captured on [COM-17](/COM/issues/COM-17); COM-16 left as-is.
 
 ### M3 Frontend slice
 
