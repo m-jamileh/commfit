@@ -1,0 +1,13 @@
+{
+  "name": "Comm-Fit Field",
+  "short_name": "Comm-Fit",
+  "description": "Comm-Fit Technician Field App",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#16314D",
+  "background_color": "#F7F5F0",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
