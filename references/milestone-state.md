@@ -158,14 +158,53 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 
 ### M3 Frontend slice
 
-**Deliverables:**
-- `/packages/ui/` complete with tokens, primitives, domain components.
-- `apps/ops/` — every Internal Ops screen implemented, matching mockups.
-- `apps/tech/` — Tech PWA installable, all screens implemented.
-- `apps/customer/` — Customer Portal pages implemented, matching mockups.
-- Auth via Supabase Auth client with role-aware route guards.
-- Typed query layer over `/packages/api-client` via TanStack Query.
-- All frontend tests passing.
+**Branch:** `feat/m3-frontend-ui-package` — commit `ba23aa2` (2026-05-20)
+
+**Deliverables (all on disk, SHA `ba23aa2`):**
+
+*packages/ui — complete design system & shared library:*
+- Design tokens (brand palette, General Sans/DM Sans/Geist Mono) — `packages/ui/src/tokens.ts`
+- Tailwind preset updated — `packages/config/tailwind.preset.ts`
+- 17 primitive components — `packages/ui/src/components/` (Button, Input, Select, Checkbox, Switch, Tabs, Card, Modal, Tooltip, Avatar, Pill, KPI, Sidebar, TopBar, PageHeader, StatusDot, AccentRail)
+- 10 domain components — `packages/ui/src/domain/` (JobCard, JobsBoard, VisitCard, VisitTimeline, EquipmentRow, TechAvailabilityRow, ActivityFeed, MapPreview, PropertyHero, SnapshotCard)
+- Supabase SSR auth lib + role-aware user type — `packages/ui/src/lib/auth.ts`, `supabase.ts`
+- Realistic mock seed data (3 accounts, 8 properties, ~15 equipment, 5 techs, 15 jobs, invoices, contracts, quotes) — `packages/ui/src/lib/mock-data.ts`
+- TanStack Query provider — `packages/ui/src/lib/query-client.tsx`
+- 11 typed query hooks (jobs, accounts, locations, equipment, technicians, invoices, contracts, quotes, parts, reports, commission) — `packages/ui/src/hooks/use-*.ts`
+
+*apps/ops — 15 screens:*
+- Full sidebar+topbar shell — `apps/ops/app/ops-shell.tsx`, `layout.tsx`
+- Dispatch kanban (showpiece) — `apps/ops/app/dispatch/page.tsx`
+- Overview KPIs + charts — `apps/ops/app/overview/page.tsx`
+- Jobs list with filters — `apps/ops/app/jobs/page.tsx`
+- Quotes list — `apps/ops/app/quotes/page.tsx`
+- Customers: Accounts / Properties / Equipment — `apps/ops/app/customers/*/page.tsx`
+- Workforce: Technicians / Parts — `apps/ops/app/workforce/*/page.tsx`
+- Finance: Invoices / Reports (6 tabs + CSV export) / Contracts — `apps/ops/app/finance/*/page.tsx`
+- Settings: Commission rules editor / Email inbox — `apps/ops/app/settings/*/page.tsx`
+- Login — `apps/ops/app/login/page.tsx`
+
+*apps/tech — PWA, 6 screens:*
+- PWA manifest + service worker — `apps/tech/public/manifest.json`, `apps/tech/public/sw.js`
+- Mobile-first bottom-nav layout — `apps/tech/app/layout.tsx`
+- Today's jobs — `apps/tech/app/today/page.tsx`
+- Active job (checklist + camera capture) — `apps/tech/app/job/[id]/page.tsx`
+- Customer sign-off — `apps/tech/app/sign-off/[id]/page.tsx`
+- Parts request — `apps/tech/app/parts-request/page.tsx`
+- History with commissions — `apps/tech/app/history/page.tsx`
+- Login — `apps/tech/app/login/page.tsx`
+
+*apps/customer — 7 screens:*
+- Top-nav layout — `apps/customer/app/layout.tsx`
+- Overview dashboard — `apps/customer/app/overview/page.tsx`
+- Properties list — `apps/customer/app/properties/page.tsx`
+- Property detail (hero + snapshot cards + tabbed history/equipment/invoices/PMs) — `apps/customer/app/properties/[id]/page.tsx`
+- Service requests — `apps/customer/app/service-requests/page.tsx`
+- Invoices — `apps/customer/app/invoices/page.tsx`
+- Contracts — `apps/customer/app/contracts/page.tsx`
+- Login — `apps/customer/app/login/page.tsx`
+
+**Typecheck:** all four packages/apps pass `tsc --noEmit` with zero errors.
 
 **Definition of Done (M3 as a whole):**
 - All Backend AND all Frontend deliverables exist and pass lint + type-check + tests.
