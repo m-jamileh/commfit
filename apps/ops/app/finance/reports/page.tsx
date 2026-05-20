@@ -24,6 +24,7 @@ import {
   useRevenueReport,
   useTechPerformanceReport,
   useEquipmentHealthReport,
+  downloadCsv,
 } from "@commfit/ui";
 
 export default function ReportsPage() {
@@ -34,7 +35,27 @@ export default function ReportsPage() {
   const { data: equipHealth } = useEquipmentHealthReport();
 
   function handleExport(reportName: string) {
-    alert(`CSV export for "${reportName}" — backend integration pending.`);
+    const slug = reportName.toLowerCase().replace(/\s+/g, "-");
+    const filename = `commfit-${slug}-${dateRange}.csv`;
+    if (reportName === "Jobs by Month" && monthlyJobs) {
+      downloadCsv(monthlyJobs, filename);
+    } else if (reportName === "Revenue" && revenue) {
+      downloadCsv(revenue, filename);
+    } else if (reportName === "Tech Performance" && techPerf) {
+      downloadCsv(techPerf, filename);
+    } else if (reportName === "Equipment Health" && equipHealth) {
+      downloadCsv([equipHealth], filename);
+    } else if (reportName === "PM Compliance") {
+      downloadCsv([
+        { account: "Sunset Properties LLC", compliance_pct: 92 },
+        { account: "Marriott/Hilton Hotels DFW", compliance_pct: 88 },
+        { account: "Plano ISD", compliance_pct: 79 },
+      ], filename);
+    } else if (reportName === "Warranty Claims") {
+      downloadCsv([
+        { year: 2025, claims: 2, recovered_usd: 600 },
+      ], filename);
+    }
   }
 
   return (

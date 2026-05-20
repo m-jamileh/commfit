@@ -20,6 +20,7 @@ export default function TechLoginPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
     if (email.includes("@tech.") || email.includes("@commfit.com")) {
+      document.cookie = "commfit-tech-session=demo; path=/; max-age=86400; SameSite=Lax";
       router.push("/today");
     } else {
       setError("Use your @tech. technician email to log in.");

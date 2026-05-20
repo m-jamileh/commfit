@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, User, Phone, Camera, CheckSquare, Package } from "lucide-react";
+import { ArrowLeft, MapPin, User, Phone, Camera, Package } from "lucide-react";
 import {
   Card,
   Pill,
@@ -10,7 +10,6 @@ import {
   useJob,
   useEquipment,
   mockLocations,
-  mockAccounts,
 } from "@commfit/ui";
 
 const PRE_SERVICE_CHECKS = [
@@ -31,7 +30,7 @@ export default function JobDetailPage() {
   );
 
   const [checks, setChecks] = useState<Record<number, boolean>>({});
-  const [partsUsed, setPartsUsed] = useState<string[]>([]);
+  const [partsUsed] = useState<string[]>([]);
 
   const locMap = new Map(mockLocations.map((l) => [l.id, l]));
   const loc = job ? locMap.get(job.locationId) : null;

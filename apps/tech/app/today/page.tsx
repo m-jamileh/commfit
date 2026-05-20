@@ -7,7 +7,6 @@ import {
   Pill,
   useJobs,
   mockLocations,
-  mockAccounts,
 } from "@commfit/ui";
 
 // Hard-coded tech ID for demo — would come from session in prod
