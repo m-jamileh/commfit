@@ -64,7 +64,7 @@ export class AuditService {
     return { items: items.map((log) => this.mapToDto(log)), total };
   }
 
-  private mapToDto(log: any): AuditLogDto {
+  private mapToDto(log: { id: string; actorUserId: string | null; entityType: string; entityId: string; action: string; before: unknown; after: unknown; metadata: unknown; createdAt: Date }): AuditLogDto {
     return {
       id: log.id,
       actorUserId: log.actorUserId ?? undefined,

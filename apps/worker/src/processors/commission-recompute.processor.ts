@@ -82,8 +82,7 @@ export class CommissionRecomputeProcessor extends WorkerHost {
     }
 
     const { job: gymJob } = invoice;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const technician = gymJob.technician!;
+    const technician = gymJob.technician as NonNullable<typeof gymJob.technician>;
 
     // 2. Load all active CommissionRules sorted by priority ASC, createdAt ASC
     const rules = await this.prisma.commissionRule.findMany({

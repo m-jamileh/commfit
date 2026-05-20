@@ -417,8 +417,8 @@ export class ReportsService {
         byLocation.set(locId, { locationId: locId });
       }
       const entry = byLocation.get(locId)!;
-      entry[g.status] = ((entry[g.status] as number) ?? 0) + g._count._all;
-      entry['total'] = ((entry['total'] as number) ?? 0) + g._count._all;
+      entry[g.status] = Number(entry[g.status] ?? 0) + g._count._all;
+      entry['total'] = Number(entry['total'] ?? 0) + g._count._all;
     }
 
     const locationIds = Array.from(byLocation.keys());

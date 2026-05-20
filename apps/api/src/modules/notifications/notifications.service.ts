@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { NotificationResponseDto } from '@commfit/shared-types';
 import { PrismaService } from '../../database/prisma.service';
 import { EmailService } from '../../services/email/email.service';
 import type { Notification } from '@commfit/db';

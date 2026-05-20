@@ -79,7 +79,6 @@ export class CommissionEngineService {
     }
 
     const { job } = invoice;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const technician = job.technician!;
 
     // Load all active rules sorted by priority ASC, createdAt ASC

@@ -60,7 +60,7 @@ export class CommissionController {
   findEarnings(
     @Query('technicianId') technicianId?: string,
     @Query('invoiceId') invoiceId?: string,
-    @Query('status') status?: string,
+    @Query('status') _status?: string,
   ) {
     return this.commissionService.listEarnings(technicianId, invoiceId);
   }
