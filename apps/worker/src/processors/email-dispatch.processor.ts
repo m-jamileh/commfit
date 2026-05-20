@@ -1,11 +1,31 @@
 import { Logger } from '@nestjs/common';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import { PrismaService } from '../database/prisma.service';
 import { EmailDispatchPayload, QUEUE_NAMES } from '../queues';
 
-const logger = new Logger('EmailDispatchProcessor');
+@Processor(QUEUE_NAMES.EMAIL_DISPATCH)
+export class EmailDispatchProcessor extends WorkerHost {
+  private readonly logger = new Logger(EmailDispatchProcessor.name);
 
-export async function processEmailDispatch(job: Job<EmailDispatchPayload>): Promise<void> {
-  logger.log(`Processing job ${job.id} on queue ${QUEUE_NAMES.EMAIL_DISPATCH}`);
-  // M3: implement via EmailService
-  throw new Error('Not implemented — M3');
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async process(job: Job<EmailDispatchPayload>): Promise<void> {
+    this.logger.log(`Processing email-dispatch job ${job.id}`);
+    const { to, subject, body, metadata } = job.data;
+
+    await this.prisma.emailInbox.create({
+      data: {
+        toEmail: to,
+        subject,
+        body,
+        sentAt: new Date(),
+        metadata: (metadata as object) ?? {},
+      },
+    });
+
+    this.logger.log(`Email dispatched to ${to} (job ${job.id})`);
+  }
 }

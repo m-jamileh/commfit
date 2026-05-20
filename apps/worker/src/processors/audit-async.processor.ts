@@ -1,15 +1,34 @@
 import { Logger } from '@nestjs/common';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import { PrismaService } from '../database/prisma.service';
 import { AuditAsyncPayload, QUEUE_NAMES } from '../queues';
 
-const logger = new Logger('AuditAsyncProcessor');
+@Processor(QUEUE_NAMES.AUDIT_ASYNC)
+export class AuditAsyncProcessor extends WorkerHost {
+  private readonly logger = new Logger(AuditAsyncProcessor.name);
 
-export async function processAuditAsync(job: Job<AuditAsyncPayload>): Promise<void> {
-  logger.log(`Processing job ${job.id} on queue ${QUEUE_NAMES.AUDIT_ASYNC}`);
-  logger.debug(
-    `Entity: ${job.data.entityType}/${job.data.entityId}, Action: ${job.data.action}`,
-  );
-  // M3: implement — write AuditLog row to DB from async queue
-  // Used for non-critical audit events that should not block the request path
-  throw new Error('Not implemented — M3');
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async process(job: Job<AuditAsyncPayload>): Promise<void> {
+    this.logger.log(`Processing audit-async job ${job.id}`);
+    const { entityType, entityId, action, actorUserId, before, after } = job.data;
+
+    await this.prisma.auditLog.create({
+      data: {
+        entityType,
+        entityId,
+        action,
+        actorUserId: actorUserId ?? null,
+        before: (before as object) ?? undefined,
+        after: (after as object) ?? undefined,
+      },
+    });
+
+    this.logger.log(
+      `AuditLog created for ${entityType}/${entityId} action=${action} (job ${job.id})`,
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { JsonLogger } from './common/json-logger';
@@ -25,6 +26,19 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Comm-Fit API')
+    .setDescription('Comm-Fit Service v1 REST API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('v1/docs', app, document);
+  // Expose raw OpenAPI JSON for api-client generation
+  app.getHttpAdapter().get('/v1/openapi.json', (_req, res) => {
+    res.json(document);
+  });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

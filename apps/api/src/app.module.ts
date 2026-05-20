@@ -1,4 +1,5 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
@@ -7,6 +8,9 @@ import { HealthModule } from './health/health.module';
 import { AdminBullBoardModule } from './admin/bull-board.module';
 import { AdminAuthMiddleware } from './admin/admin-auth.middleware';
 import { DatabaseModule } from './database/database.module';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
@@ -22,6 +26,12 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { EmailModule } from './services/email/email.module';
+import { PaymentModule } from './services/payment/payment.module';
+import { ESignModule } from './services/esign/esign.module';
+import { WarrantyModule } from './services/warranty/warranty.module';
+import { ERPModule } from './services/erp/erp.module';
+import { CRMModule } from './services/crm/crm.module';
 
 @Module({
   imports: [
@@ -34,6 +44,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
         url: process.env.REDIS_URL ?? 'redis://localhost:6379',
       },
     }),
+    BullModule.registerQueue({ name: 'audit-async' }),
     BullBoardModule.forRoot({
       route: '/admin/bull-board',
       adapter: ExpressAdapter,
@@ -56,6 +67,17 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     NotificationsModule,
     AuditModule,
     WebhooksModule,
+    EmailModule,
+    PaymentModule,
+    ESignModule,
+    WarrantyModule,
+    ERPModule,
+    CRMModule,
+  ],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })
 export class AppModule implements NestModule {
