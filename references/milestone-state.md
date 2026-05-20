@@ -189,15 +189,15 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 
 ### M3 Frontend slice
 
-**Branch:** `feat/m3-frontend-ui-package` — commit `ba23aa2` (2026-05-20)
+**Branch:** `feat/m3-frontend-ui-package` — commits `ba23aa2` → `ef8c00c` → `62ca64b` (2026-05-20)
 
-**Deliverables (all on disk, SHA `ba23aa2`):**
+**Deliverables (all on disk, latest SHA `62ca64b`):**
 
 *packages/ui — complete design system & shared library:*
 - Design tokens (brand palette, General Sans/DM Sans/Geist Mono) — `packages/ui/src/tokens.ts`
 - Tailwind preset updated — `packages/config/tailwind.preset.ts`
-- 17 primitive components — `packages/ui/src/components/` (Button, Input, Select, Checkbox, Switch, Tabs, Card, Modal, Tooltip, Avatar, Pill, KPI, Sidebar, TopBar, PageHeader, StatusDot, AccentRail)
-- 10 domain components — `packages/ui/src/domain/` (JobCard, JobsBoard, VisitCard, VisitTimeline, EquipmentRow, TechAvailabilityRow, ActivityFeed, MapPreview, PropertyHero, SnapshotCard)
+- 20 primitive components — `packages/ui/src/components/` (Button, Input, Select, Checkbox, Switch, Tabs, Card, Modal, Tooltip, Avatar, Pill, KPI, Sidebar, TopBar, PageHeader, StatusDot, AccentRail, Radio, Table, Toast)
+- 11 domain components — `packages/ui/src/domain/` (JobCard, JobsBoard, VisitCard, VisitTimeline, EquipmentRow, TechAvailabilityRow, ActivityFeed, MapPreview, PropertyHero, SnapshotCard, CommissionRuleEditor)
 - Supabase SSR auth lib + role-aware user type — `packages/ui/src/lib/auth.ts`, `supabase.ts`
 - Realistic mock seed data (3 accounts, 8 properties, ~15 equipment, 5 techs, 15 jobs, invoices, contracts, quotes) — `packages/ui/src/lib/mock-data.ts`
 - TanStack Query provider — `packages/ui/src/lib/query-client.tsx`
@@ -235,7 +235,10 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - Contracts — `apps/customer/app/contracts/page.tsx`
 - Login — `apps/customer/app/login/page.tsx`
 
-**Typecheck:** all four packages/apps pass `tsc --noEmit` with zero errors.
+*Auth middleware (all three apps):*
+- Session-based route guards — `apps/ops/middleware.ts`, `apps/tech/middleware.ts`, `apps/customer/middleware.ts`
+
+**Build + Test:** `pnpm test` — 11/11 tasks successful (build + typecheck + jest backend), zero ESLint errors, all three Next.js apps compile cleanly (verified SHA `62ca64b`).
 
 **Status:** in_review (CTO Type C verified; awaiting joint local smoke before M3 → `in_review` overall).
 **Branch merged:** `feat/m3-frontend-ui-package` → `dev` (no-ff merge `07f576f`, pushed to `origin/dev`).

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   PageHeader,
   Card,
@@ -19,7 +19,6 @@ import {
   useJobs,
   mockLocations,
   mockTechnicians,
-  type JobCardData,
 } from "@commfit/ui";
 import type { JobStatus, JobType } from "@commfit/shared-types";
 

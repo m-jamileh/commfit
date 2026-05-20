@@ -24,6 +24,9 @@ export * from "./components/topbar";
 export * from "./components/page-header";
 export * from "./components/status-dot";
 export * from "./components/accent-rail";
+export * from "./components/radio";
+export * from "./components/table";
+export * from "./components/toast";
 
 // Domain components
 export * from "./domain/job-card";
@@ -36,6 +39,7 @@ export * from "./domain/activity-feed";
 export * from "./domain/map-preview";
 export * from "./domain/property-hero";
 export * from "./domain/snapshot-card";
+export * from "./domain/commission-rule-editor";
 
 // Query hooks
 export * from "./hooks/use-jobs";

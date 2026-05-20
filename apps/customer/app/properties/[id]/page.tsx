@@ -18,10 +18,8 @@ import {
   useJobs,
   useInvoices,
   useContracts,
-  mockEquipment,
   type VisitCardData,
 } from "@commfit/ui";
-import type { EquipmentCondition } from "@commfit/shared-types";
 
 export default function PropertyDetailPage() {
   const params = useParams();

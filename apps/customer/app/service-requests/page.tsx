@@ -23,7 +23,7 @@ import {
 const DEMO_ACCOUNT_ID = "acc-001";
 
 export default function ServiceRequestsPage() {
-  const { data: jobs = [], isLoading } = useJobs({ accountId: DEMO_ACCOUNT_ID });
+  const { data: jobs = [] } = useJobs({ accountId: DEMO_ACCOUNT_ID });
   const locMap = new Map(mockLocations.map((l) => [l.id, l]));
   const [showModal, setShowModal] = useState(false);
   const [location, setLocation] = useState("");

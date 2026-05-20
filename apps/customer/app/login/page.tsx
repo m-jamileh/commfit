@@ -20,6 +20,7 @@ export default function CustomerLoginPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
     if (email.includes("@")) {
+      document.cookie = "commfit-customer-session=demo; path=/; max-age=86400; SameSite=Lax";
       router.push("/overview");
     } else {
       setError("Please enter a valid email address.");

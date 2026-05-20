@@ -18,9 +18,9 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // Mock auth: any @commfit.com email gets in
     await new Promise((r) => setTimeout(r, 600));
     if (email.includes("@commfit.com") || email.includes("@tech.") || email.includes("@admin.")) {
+      document.cookie = "commfit-ops-session=demo; path=/; max-age=86400; SameSite=Lax";
       router.push("/dispatch");
     } else {
       setError("Invalid credentials. Use a @commfit.com email for ops access.");
