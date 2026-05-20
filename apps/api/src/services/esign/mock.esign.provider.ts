@@ -27,7 +27,7 @@ export class MockESignProvider extends ESignService {
         signerName: input.signerName,
         signingUrl,
         status: 'sent',
-        metadata: input.metadata ?? {},
+        metadata: (input.metadata ?? {}) as unknown as import('@commfit/db').Prisma.InputJsonValue,
       },
     });
 

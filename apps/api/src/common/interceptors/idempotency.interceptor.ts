@@ -7,6 +7,7 @@ import {
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
+import { createHash } from 'node:crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { TenantScope } from '../middleware/scope.middleware';
 
@@ -36,6 +37,9 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
     const tenantAccountId = req.tenantScope?.accountId ?? 'unknown';
     const compositeKey = `${tenantAccountId}:${req.method}:${req.path}:${idempotencyKey}`;
+    const requestHash = createHash('sha256')
+      .update(JSON.stringify(req.body ?? {}))
+      .digest('hex');
     const now = new Date();
 
     const existing = await this.prisma.idempotencyRecord.findUnique({
@@ -56,17 +60,17 @@ export class IdempotencyInterceptor implements NestInterceptor {
             where: { key: compositeKey },
             create: {
               key: compositeKey,
+              requestHash,
               response: responseBody as object,
               expiresAt,
             },
             update: {
+              requestHash,
               response: responseBody as object,
               expiresAt,
             },
           })
-          .catch(() => {
-            // Fire-and-forget; do not break the response on cache failure
-          });
+          .catch(() => {});
       }),
     );
   }

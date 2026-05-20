@@ -29,7 +29,7 @@ export class MockCRMProvider extends CRMService {
         entityType: 'Account',
         entityId: input.accountId,
         eventType: input.eventType,
-        payload: input.payload,
+        payload: input.payload as object,
       },
     });
   }

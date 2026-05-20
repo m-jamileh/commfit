@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -13,9 +14,16 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import {
   AccountResponseDto,
   CreateAccountDto,
+  PaginatedResponseDto,
+  PaginationQueryDto,
   UpdateAccountDto,
 } from '@commfit/shared-types';
 import { AccountsService } from './accounts.service';
+
+class AddUserDto {
+  userId!: string;
+  role!: 'admin' | 'user';
+}
 
 @ApiTags('accounts')
 @Controller('accounts')
@@ -23,9 +31,11 @@ export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all accounts' })
-  findAll(): Promise<AccountResponseDto[]> {
-    return this.accountsService.findAll();
+  @ApiOperation({ summary: 'List all accounts (paginated)' })
+  findAll(
+    @Query() query: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<AccountResponseDto>> {
+    return this.accountsService.findAll(query);
   }
 
   @Post()
@@ -55,5 +65,25 @@ export class AccountsController {
   @ApiOperation({ summary: 'Archive an account' })
   archive(@Param('id') id: string): Promise<AccountResponseDto> {
     return this.accountsService.archive(id);
+  }
+
+  @Post(':id/users')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add a user to an account' })
+  async addUser(
+    @Param('id') accountId: string,
+    @Body() body: AddUserDto,
+  ): Promise<void> {
+    return this.accountsService.addUser(accountId, body.userId, body.role);
+  }
+
+  @Delete(':accountId/users/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a user from an account' })
+  async removeUser(
+    @Param('accountId') accountId: string,
+    @Param('userId') userId: string,
+  ): Promise<void> {
+    return this.accountsService.removeUser(accountId, userId);
   }
 }

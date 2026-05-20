@@ -1,11 +1,8 @@
-import { Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { PrismaService } from '../database/prisma.service';
-import { CommissionRecomputePayload, QUEUE_NAMES } from '../queues';
+import { PrismaService } from '../../database/prisma.service';
 
-interface RuleTrace {
+export interface RuleTrace {
   evaluatedAt: string;
   invoiceId: string;
   invoiceLineItemId: string | null;
@@ -39,21 +36,24 @@ interface RuleTrace {
   commissionCents: number;
 }
 
-@Processor(QUEUE_NAMES.COMMISSION_RECOMPUTE, { concurrency: 1 })
-export class CommissionRecomputeProcessor extends WorkerHost {
-  private readonly logger = new Logger(CommissionRecomputeProcessor.name);
+export interface ComputeResult {
+  invoiceLineItemId: string | null;
+  baseAmountCents: number;
+  commissionPct: number;
+  commissionCents: number;
+  ruleTrace: RuleTrace;
+}
 
-  constructor(private readonly prisma: PrismaService) {
-    super();
-  }
+@Injectable()
+export class CommissionEngineService {
+  constructor(private readonly prisma: PrismaService) {}
 
-  async process(job: Job<CommissionRecomputePayload>): Promise<void> {
-    const { invoiceId, triggeredByUserId } = job.data;
-    this.logger.log(
-      `Processing commission-recompute job ${job.id} for invoice ${invoiceId}`,
-    );
-
-    // 1. Load invoice + lineItems + job + technician
+  async computeForInvoice(
+    invoiceId: string,
+    triggeredByUserId?: string,
+    persist = true,
+  ): Promise<ComputeResult[]> {
+    // Load invoice with all needed relations
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId },
       include: {
@@ -75,35 +75,32 @@ export class CommissionRecomputeProcessor extends WorkerHost {
     });
 
     if (!invoice || !invoice.job || !invoice.job.technician) {
-      this.logger.warn(
-        `Invoice ${invoiceId} has no associated job/technician — skipping commission`,
-      );
-      return;
+      return [];
     }
 
-    const { job: gymJob } = invoice;
+    const { job } = invoice;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const technician = gymJob.technician!;
+    const technician = job.technician!;
 
-    // 2. Load all active CommissionRules sorted by priority ASC, createdAt ASC
+    // Load all active rules sorted by priority ASC, createdAt ASC
     const rules = await this.prisma.commissionRule.findMany({
       where: { active: true },
       orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
     });
 
-    // 3. For each lineItem × technician
+    const results: ComputeResult[] = [];
+
     for (const lineItem of invoice.lineItems) {
       const equipmentClass =
         lineItem.jobEquipment?.equipment?.equipmentClass ?? null;
 
       const context = {
         techType: technician.techType as string | null,
-        jobType: gymJob.jobType as string | null,
+        jobType: job.jobType as string | null,
         equipmentClass: equipmentClass as string | null,
         technicianId: technician.id,
       };
 
-      // 3b. Find first matching rule
       const rulesEvaluated: RuleTrace['rulesEvaluated'] = [];
       let matchedRule: (typeof rules)[number] | null = null;
 
@@ -112,7 +109,7 @@ export class CommissionRecomputeProcessor extends WorkerHost {
           rule.techTypeFilter === null ||
           rule.techTypeFilter === technician.techType;
         const jobTypeMatch =
-          rule.jobTypeFilter === null || rule.jobTypeFilter === gymJob.jobType;
+          rule.jobTypeFilter === null || rule.jobTypeFilter === job.jobType;
         const equipmentClassMatch =
           rule.equipmentClassFilter === null ||
           rule.equipmentClassFilter === equipmentClass;
@@ -145,7 +142,7 @@ export class CommissionRecomputeProcessor extends WorkerHost {
         }
       }
 
-      // 3c. Check bonus tier
+      // Determine rate
       let rateApplied = matchedRule ? Number(matchedRule.ratePct) : 0;
       let bonusTierActivated = false;
       let completedJobsThisMonth = 0;
@@ -179,7 +176,6 @@ export class CommissionRecomputeProcessor extends WorkerHost {
         }
       }
 
-      // 3d. Compute commissionCents = floor(totalCents * rate / 100)
       const baseAmountCents = Number(lineItem.totalCents);
       const commissionCents = Math.floor((baseAmountCents * rateApplied) / 100);
 
@@ -201,69 +197,77 @@ export class CommissionRecomputeProcessor extends WorkerHost {
         commissionCents,
       };
 
-      // 3e. Idempotency check
-      const existing = await this.prisma.commissionEarning.findFirst({
-        where: {
-          technicianId: technician.id,
-          invoiceId,
-          invoiceLineItemId: lineItem.id,
-        },
-      });
-
-      if (existing) {
-        this.logger.debug(
-          `CommissionEarning already exists for technician=${technician.id} invoice=${invoiceId} lineItem=${lineItem.id} — skipping`,
-        );
-        continue;
-      }
-
-      // 3f. Create CommissionEarning + AuditLog in transaction
-      const earningId = randomUUID();
-
-      await this.prisma.$transaction([
-        this.prisma.commissionEarning.create({
-          data: {
-            id: earningId,
+      if (persist) {
+        // Idempotency check
+        const existing = await this.prisma.commissionEarning.findFirst({
+          where: {
             technicianId: technician.id,
             invoiceId,
-            invoiceLineItemId: lineItem.id,
-            commissionRuleId: matchedRule?.id ?? null,
-            jobId: gymJob.id,
-            baseAmountCents: BigInt(baseAmountCents),
-            commissionPct: rateApplied,
-            commissionCents: BigInt(commissionCents),
-            ruleTrace: ruleTrace as object,
-            status: 'pending',
+            invoiceLineItemId: lineItem.id ?? null,
           },
-        }),
-        this.prisma.auditLog.create({
-          data: {
-            entityType: 'CommissionEarning',
-            entityId: earningId,
-            action: 'create',
-            actorUserId: triggeredByUserId ?? null,
-            after: {
+        });
+
+        if (existing) {
+          // Return existing as result but don't re-insert
+          results.push({
+            invoiceLineItemId: lineItem.id,
+            baseAmountCents,
+            commissionPct: rateApplied,
+            commissionCents,
+            ruleTrace,
+          });
+          continue;
+        }
+
+        const earningId = randomUUID();
+
+        await this.prisma.$transaction([
+          this.prisma.commissionEarning.create({
+            data: {
               id: earningId,
               technicianId: technician.id,
               invoiceId,
               invoiceLineItemId: lineItem.id,
               commissionRuleId: matchedRule?.id ?? null,
-              jobId: gymJob.id,
-              baseAmountCents,
+              jobId: job.id,
+              baseAmountCents: BigInt(baseAmountCents),
               commissionPct: rateApplied,
-              commissionCents,
+              commissionCents: BigInt(commissionCents),
+              ruleTrace: ruleTrace as object,
+              status: 'pending',
             },
-          },
-        }),
-      ]);
+          }),
+          this.prisma.auditLog.create({
+            data: {
+              entityType: 'CommissionEarning',
+              entityId: earningId,
+              action: 'create',
+              actorUserId: triggeredByUserId ?? null,
+              after: {
+                id: earningId,
+                technicianId: technician.id,
+                invoiceId,
+                invoiceLineItemId: lineItem.id,
+                commissionRuleId: matchedRule?.id ?? null,
+                jobId: job.id,
+                baseAmountCents,
+                commissionPct: rateApplied,
+                commissionCents,
+              },
+            },
+          }),
+        ]);
+      }
 
-      this.logger.log(
-        `CommissionEarning ${earningId} created for technician=${technician.id} lineItem=${lineItem.id} commissionCents=${commissionCents}`,
-      );
+      results.push({
+        invoiceLineItemId: lineItem.id,
+        baseAmountCents,
+        commissionPct: rateApplied,
+        commissionCents,
+        ruleTrace,
+      });
     }
 
-    this.logger.log(
-      `Commission recompute complete for invoice ${invoiceId} (job ${job.id})`,
-    );
+    return results;
   }
 }

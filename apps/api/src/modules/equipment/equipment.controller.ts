@@ -16,6 +16,8 @@ import { Request } from 'express';
 import {
   CreateEquipmentDto,
   EquipmentResponseDto,
+  PaginatedResponseDto,
+  PaginationQueryDto,
   UpdateEquipmentDto,
 } from '@commfit/shared-types';
 import { EquipmentService } from './equipment.service';
@@ -26,13 +28,24 @@ export class EquipmentController {
   constructor(private readonly equipmentService: EquipmentService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all equipment' })
+  @ApiOperation({ summary: 'List all equipment (paginated)' })
   findAll(
-    @Req() req: Request,
+    @Query() query: PaginationQueryDto,
+    @Query('accountId') queryAccountId?: string,
     @Query('locationId') locationId?: string,
-  ): Promise<EquipmentResponseDto[]> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.equipmentService.findAll(accountId, locationId);
+    @Query('equipmentClass') equipmentClass?: string,
+    @Query('condition') condition?: string,
+    @Req() req?: Request,
+  ): Promise<PaginatedResponseDto<EquipmentResponseDto>> {
+    const accountId =
+      queryAccountId ?? (req as Request)?.tenantScope?.accountId;
+    return this.equipmentService.findAll({
+      ...query,
+      accountId,
+      locationId,
+      equipmentClass,
+      condition,
+    });
   }
 
   @Post()
@@ -44,30 +57,23 @@ export class EquipmentController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get equipment by ID' })
-  findOne(
-    @Param('id') id: string,
-    @Req() req: Request,
-  ): Promise<EquipmentResponseDto> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.equipmentService.findOne(id, accountId);
+  findOne(@Param('id') id: string): Promise<EquipmentResponseDto> {
+    return this.equipmentService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update equipment' })
   update(
     @Param('id') id: string,
-    @Req() req: Request,
     @Body() body: UpdateEquipmentDto,
   ): Promise<EquipmentResponseDto> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.equipmentService.update(id, accountId, body);
+    return this.equipmentService.update(id, body);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive equipment' })
-  archive(@Param('id') id: string, @Req() req: Request): Promise<EquipmentResponseDto> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.equipmentService.archive(id, accountId);
+  archive(@Param('id') id: string): Promise<EquipmentResponseDto> {
+    return this.equipmentService.archive(id);
   }
 }

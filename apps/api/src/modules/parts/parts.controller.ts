@@ -3,15 +3,31 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  Put,
   Param,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  CreatePartDto,
+  PaginatedResponseDto,
+  PaginationQueryDto,
+  PartInventoryResponseDto,
+  PartResponseDto,
+  UpdatePartDto,
+} from '@commfit/shared-types';
 import { PartsService } from './parts.service';
 
-const NOT_IMPLEMENTED = { statusCode: 501, message: 'Not implemented' };
+class UpdateInventoryDto {
+  locationId?: string;
+  technicianId?: string;
+  quantity!: number;
+  reorderThreshold?: number;
+}
 
 @ApiTags('parts')
 @Controller('parts')
@@ -19,33 +35,62 @@ export class PartsController {
   constructor(private readonly partsService: PartsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all parts' })
-  findAll(): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  @ApiOperation({ summary: 'List all parts (paginated)' })
+  findAll(
+    @Query() query: PaginationQueryDto,
+    @Query('status') status?: string,
+  ): Promise<PaginatedResponseDto<PartResponseDto>> {
+    return this.partsService.findAll({ ...query, status });
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a part' })
-  create(@Body() _body: unknown): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
-  }
-
-  @Get('inventory')
-  @ApiOperation({ summary: 'List part inventory' })
-  findInventory(): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  create(@Body() body: CreatePartDto): Promise<PartResponseDto> {
+    return this.partsService.create(body);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a part by ID' })
-  findOne(@Param('id') _id: string): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  findOne(@Param('id') id: string): Promise<PartResponseDto> {
+    return this.partsService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a part' })
-  update(@Param('id') _id: string, @Body() _body: unknown): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  update(@Param('id') id: string, @Body() body: UpdatePartDto): Promise<PartResponseDto> {
+    return this.partsService.update(id, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Archive a part' })
+  archive(@Param('id') id: string): Promise<PartResponseDto> {
+    return this.partsService.archive(id);
+  }
+
+  @Get(':id/inventory')
+  @ApiOperation({ summary: 'Get inventory for a part' })
+  getInventory(
+    @Param('id') id: string,
+    @Query('locationId') locationId?: string,
+    @Query('technicianId') technicianId?: string,
+  ): Promise<PartInventoryResponseDto[]> {
+    return this.partsService.getInventory(id, locationId, technicianId);
+  }
+
+  @Put(':id/inventory')
+  @ApiOperation({ summary: 'Upsert inventory for a part' })
+  updateInventory(
+    @Param('id') id: string,
+    @Body() body: UpdateInventoryDto,
+  ): Promise<PartInventoryResponseDto> {
+    return this.partsService.updateInventory(
+      id,
+      body.locationId,
+      body.technicianId,
+      body.quantity,
+      body.reorderThreshold,
+    );
   }
 }

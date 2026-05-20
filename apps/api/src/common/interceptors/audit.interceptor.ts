@@ -8,9 +8,14 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 import { PrismaService } from '../../database/prisma.service';
-import { TenantScope } from '../middleware/scope.middleware';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
+
+// Extracts entity id from path params (last UUID segment or param id)
+function extractEntityId(req: Request): string {
+  const params = req.params as Record<string, string>;
+  return params['id'] ?? params['0'] ?? req.path;
+}
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
@@ -18,43 +23,39 @@ export class AuditInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const http = context.switchToHttp();
-    const req = http.getRequest<Request & { user?: { id?: string }; tenantScope?: TenantScope }>();
+    const req = http.getRequest<Request & { user?: { id?: string } }>();
     const res = http.getResponse<Response>();
 
     if (!MUTATING_METHODS.has(req.method)) {
       return next.handle();
     }
 
-    const tenantScope = req.tenantScope;
-    const actorId: string | null = req['user']?.id ?? null;
-    const entityType = req.url;
+    const actorUserId: string | null = req['user']?.id ?? null;
+    const entityType = req.path.split('/')[2] ?? req.path;
+    const entityId = extractEntityId(req);
     const action = req.method;
 
     return next.handle().pipe(
       tap(() => {
-        const statusCode = res.statusCode;
-
-        if (statusCode === 501) {
+        if (res.statusCode === 501) {
           return;
         }
 
-        const after = { statusCode, path: req.url, method: req.method };
+        const after = { statusCode: res.statusCode, path: req.path, method: req.method };
 
         this.prisma.auditLog
           .create({
             data: {
-              tenantAccountId: tenantScope?.accountId ?? 'unknown',
-              actorId,
+              actorUserId,
               entityType,
-              entityId: null,
+              entityId,
               action,
-              before: null,
+              before: undefined,
               after,
+              metadata: {},
             },
           })
-          .catch(() => {
-            // Fire-and-forget; do not break the response on audit failure
-          });
+          .catch(() => {});
       }),
     );
   }

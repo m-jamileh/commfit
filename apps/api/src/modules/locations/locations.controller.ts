@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
   Req,
@@ -15,6 +16,8 @@ import { Request } from 'express';
 import {
   CreateLocationDto,
   LocationResponseDto,
+  PaginatedResponseDto,
+  PaginationQueryDto,
   UpdateLocationDto,
 } from '@commfit/shared-types';
 import { LocationsService } from './locations.service';
@@ -25,10 +28,15 @@ export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all locations' })
-  findAll(@Req() req: Request): Promise<LocationResponseDto[]> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.locationsService.findAll(accountId);
+  @ApiOperation({ summary: 'List all locations (paginated)' })
+  findAll(
+    @Query() query: PaginationQueryDto,
+    @Query('accountId') queryAccountId?: string,
+    @Req() req?: Request,
+  ): Promise<PaginatedResponseDto<LocationResponseDto>> {
+    const accountId =
+      queryAccountId ?? (req as Request)?.tenantScope?.accountId ?? '';
+    return this.locationsService.findAll(accountId, query);
   }
 
   @Post()
@@ -40,8 +48,13 @@ export class LocationsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a location by ID' })
-  findOne(@Param('id') id: string, @Req() req: Request): Promise<LocationResponseDto> {
-    const accountId = req.tenantScope?.accountId ?? '';
+  findOne(
+    @Param('id') id: string,
+    @Query('accountId') queryAccountId?: string,
+    @Req() req?: Request,
+  ): Promise<LocationResponseDto> {
+    const accountId =
+      queryAccountId ?? (req as Request)?.tenantScope?.accountId;
     return this.locationsService.findOne(id, accountId);
   }
 
@@ -49,18 +62,15 @@ export class LocationsController {
   @ApiOperation({ summary: 'Update a location' })
   update(
     @Param('id') id: string,
-    @Req() req: Request,
     @Body() body: UpdateLocationDto,
   ): Promise<LocationResponseDto> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.locationsService.update(id, accountId, body);
+    return this.locationsService.update(id, body);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive a location' })
-  archive(@Param('id') id: string, @Req() req: Request): Promise<LocationResponseDto> {
-    const accountId = req.tenantScope?.accountId ?? '';
-    return this.locationsService.archive(id, accountId);
+  archive(@Param('id') id: string): Promise<LocationResponseDto> {
+    return this.locationsService.archive(id);
   }
 }

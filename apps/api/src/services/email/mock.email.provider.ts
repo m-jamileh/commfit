@@ -23,7 +23,7 @@ export class MockEmailProvider extends EmailService {
         subject: input.subject,
         body: input.body,
         sentAt: new Date(),
-        metadata: input.metadata ?? {},
+        metadata: (input.metadata ?? {}) as unknown as import('@commfit/db').Prisma.InputJsonValue,
       },
     });
 
