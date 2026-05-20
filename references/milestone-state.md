@@ -158,9 +158,9 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 
 ### M3 Frontend slice
 
-**Branch:** `feat/m3-frontend-ui-package` — commits `ba23aa2` + `ef8c00c` (2026-05-20)
+**Branch:** `feat/m3-frontend-ui-package` — commits `ba23aa2` → `ef8c00c` → `62ca64b` (2026-05-20)
 
-**Deliverables (all on disk, latest SHA `ef8c00c`):**
+**Deliverables (all on disk, latest SHA `62ca64b`):**
 
 *packages/ui — complete design system & shared library:*
 - Design tokens (brand palette, General Sans/DM Sans/Geist Mono) — `packages/ui/src/tokens.ts`
@@ -207,7 +207,7 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 *Auth middleware (all three apps):*
 - Session-based route guards — `apps/ops/middleware.ts`, `apps/tech/middleware.ts`, `apps/customer/middleware.ts`
 
-**Typecheck:** all four packages/apps pass `tsc --noEmit` with zero errors (verified SHA `ef8c00c`).
+**Build + Test:** `pnpm test` — 11/11 tasks successful (build + typecheck + jest backend), zero ESLint errors, all three Next.js apps compile cleanly (verified SHA `62ca64b`).
 
 **Definition of Done (M3 as a whole):**
 - All Backend AND all Frontend deliverables exist and pass lint + type-check + tests.
