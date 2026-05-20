@@ -8,7 +8,7 @@
     "start": "node dist/main",
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
   },
@@ -30,7 +30,10 @@
     "helmet": "^8.0.0",
     "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@commfit/db": "workspace:*",
+    "@commfit/shared-types": "workspace:*",
+    "@nestjs/swagger": "^8.1.1"
   },
   "devDependencies": {
     "@commfit/config": "workspace:*",

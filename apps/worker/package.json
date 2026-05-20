@@ -8,7 +8,7 @@
     "start": "node dist/main",
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
   },

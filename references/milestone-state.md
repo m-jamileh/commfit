@@ -48,24 +48,33 @@ Last updated: 2026-05-20 (M1 done / M2 in_progress)
 
 ## M2 — Platform & Deployment
 **Owner:** DevOps / Platform Engineer
-**Status:** in_progress
+**Status:** in_review
 **Started:** 2026-05-20
-**Delivered:** —
+**Delivered:** 2026-05-20
 **Approved:** —
 
+**Branch:** `feat/m2-platform-and-deployment`
+**Commit SHA:** `ed8c52e`
+
 **Deliverables:**
-- pnpm monorepo configured — `pnpm-workspace.yaml`, root `package.json` (incl. `packageManager` field — see M1 follow-up), `turbo.json`
-- `packages/db/package.json` — add `build` script so turbo `^build` graph satisfies api → db (M1 follow-up)
-- Shared config package — `/packages/config/`
-- UI package scaffold — `/packages/ui/`
-- Utils package scaffold — `/packages/utils/`
-- Dockerfiles — `apps/api/Dockerfile`, `apps/worker/Dockerfile`
-- Local-dev orchestration — `docker-compose.yml` at repo root
-- GitHub Actions CI — `.github/workflows/ci.yml`
-- GitHub Actions deploy (manual-trigger only) — `.github/workflows/deploy.yml`
-- Hosting configs — `infra/vercel.json` (×3), `infra/railway.toml`
-- Env manifest — `infra/env-manifest.md`
-- Deploy runbook — `infra/deploy-runbook.md`
+- pnpm monorepo configured — `pnpm-workspace.yaml` (ed8c52e), root `package.json` with `packageManager: pnpm@9.15.4` (ed8c52e), `turbo.json` (ed8c52e)
+- `packages/db/package.json` — `build: prisma generate`, custom client output `./generated/client` (ed8c52e)
+- Shared config package — `/packages/config/` (eslint.config.js, prettier.config.js, tsconfig.base.json, tailwind.preset.ts) — (ed8c52e)
+- UI package scaffold — `/packages/ui/` (tokens, cn utility, components.json) — (ed8c52e)
+- Utils package scaffold — `/packages/utils/` (date/money/validation helpers) — (ed8c52e)
+- API-client stub — `/packages/api-client/` (scaffold for M3 OpenAPI generation) — (ed8c52e)
+- Dockerfiles — `apps/api/Dockerfile` (ed8c52e), `apps/worker/Dockerfile` (ed8c52e)
+- Local-dev orchestration — `docker-compose.yml` at repo root (Postgres 16 + Redis 7 + api + worker) — (ed8c52e)
+- GitHub Actions CI — `.github/workflows/ci.yml` (ed8c52e)
+- GitHub Actions deploy (manual-trigger only) — `.github/workflows/deploy.yml` (ed8c52e)
+- Hosting configs — `infra/vercel.ops.json`, `infra/vercel.tech.json`, `infra/vercel.customer.json`, `infra/railway.toml` — (ed8c52e)
+- Env manifest — `infra/env-manifest.md` (ed8c52e)
+- Deploy runbook — `infra/deploy-runbook.md` (ed8c52e)
+- Sentry wired: api (`apps/api/src/instrument.ts`), worker (`apps/worker/src/instrument.ts`), ops/tech/customer (`sentry.{client,server,edge}.config.ts`) — (ed8c52e)
+- Bull-Board at `/v1/admin/bull-board` with `BULL_BOARD_ADMIN_KEY` guard — (ed8c52e)
+- Health endpoints: api `/v1/health` (ed8c52e), worker `/v1/health` (ed8c52e)
+- Stdout JSON logging: `apps/api/src/common/json-logger.ts`, `apps/worker/src/common/json-logger.ts` — (ed8c52e)
+- Next.js app stubs: `apps/ops/`, `apps/tech/`, `apps/customer/` with Sentry + next.config.ts — (ed8c52e)
 - Sentry wired in all 5 services
 - Bull-Board exposed at `apps/api/v1/admin/bull-board` (admin-guarded)
 - Health endpoints — `/v1/health` on api + worker
