@@ -1,30 +1,33 @@
-import 'reflect-metadata';
+import './instrument';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { JsonLogger } from './common/json-logger';
 
-async function bootstrap(): Promise<void> {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule, { logger: ['log', 'error', 'warn'] });
-
-  app.setGlobalPrefix('v1');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-
-  const config = new DocumentBuilder()
-    .setTitle('Comm-Fit API')
-    .setDescription('Comm-Fit Service — field-service automation platform')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('v1/openapi', app, document, {
-    jsonDocumentUrl: 'v1/openapi.json',
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    logger: new JsonLogger(),
+    bufferLogs: true,
   });
 
-  const port = process.env['PORT'] ?? 3001;
+  app.useLogger(new JsonLogger());
+  app.setGlobalPrefix('v1');
+  app.use(helmet());
+  app.enableCors({
+    origin: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'],
+    credentials: true,
+  });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  logger.log(`API running on port ${port}`);
 }
 
 bootstrap();

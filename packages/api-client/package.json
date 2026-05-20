@@ -1,0 +1,27 @@
+{
+  "name": "@commfit/api-client",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "generate": "openapi-typescript http://localhost:3000/v1/openapi.json -o src/schema.ts"
+  },
+  "devDependencies": {
+    "@commfit/config": "workspace:*",
+    "openapi-typescript": "^7.4.4",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@commfit/shared-types": "workspace:*"
+  }
+}

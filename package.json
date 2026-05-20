@@ -1,21 +1,19 @@
 {
   "name": "commfit",
   "private": true,
-  "version": "0.0.1",
+  "packageManager": "pnpm@9.15.4+sha512.stwg4vxys+GISEWbNzWaMgZGY+VielHkx0ssKd2OjgSRSDw6u0B4nP1Xi/Ni+2uoJhsF8Dh9dnku1uI+o7G2oA==",
   "scripts": {
+    "dev": "turbo run dev --parallel",
     "build": "turbo run build",
-    "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "format": "prettier --write"
   },
   "devDependencies": {
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
     "turbo": "^2.3.3",
-    "typescript": "^5.6.3",
-    "@types/node": "^22.0.0"
-  },
-  "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+    "typescript": "^5.7.3"
   }
 }

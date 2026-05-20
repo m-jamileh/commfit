@@ -1,0 +1,42 @@
+[build]
+builder = "DOCKERFILE"
+
+[[services]]
+name = "api"
+source = "apps/api"
+
+[services.build]
+dockerfilePath = "apps/api/Dockerfile"
+buildContext = "."
+
+[services.deploy]
+startCommand = "node apps/api/dist/main.js"
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[services.deploy.healthcheck]
+path = "/v1/health"
+intervalSeconds = 30
+timeoutSeconds = 10
+startPeriodSeconds = 60
+
+[[services]]
+name = "worker"
+source = "apps/worker"
+
+[services.build]
+dockerfilePath = "apps/worker/Dockerfile"
+buildContext = "."
+
+[services.deploy]
+startCommand = "node apps/worker/dist/main.js"
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[services.deploy.healthcheck]
+path = "/v1/health"
+intervalSeconds = 30
+timeoutSeconds = 10
+startPeriodSeconds = 60

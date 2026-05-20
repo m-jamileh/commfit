@@ -1,15 +1,14 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@commfit/config/tsconfig.base.json",
   "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "outDir": "dist",
     "rootDir": "src",
-    "paths": {
-      "@commfit/shared-types": ["../../packages/shared-types/dist"],
-      "@commfit/shared-types/*": ["../../packages/shared-types/dist/*"],
-      "@commfit/db": ["../../packages/db/dist"],
-      "@commfit/db/*": ["../../packages/db/dist/*"]
-    }
+    "baseUrl": "."
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+  "exclude": ["dist", "node_modules", "test"]
 }

@@ -1,0 +1,110 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      services:
+        description: 'Services to deploy (comma-separated: api,worker,ops,tech,customer or all)'
+        required: true
+        default: 'all'
+        type: string
+
+jobs:
+  deploy-api:
+    name: Deploy API to Railway
+    runs-on: ubuntu-latest
+    if: contains(github.event.inputs.services, 'api') || github.event.inputs.services == 'all'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy API
+        run: railway up --service api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  deploy-worker:
+    name: Deploy Worker to Railway
+    runs-on: ubuntu-latest
+    if: contains(github.event.inputs.services, 'worker') || github.event.inputs.services == 'all'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy Worker
+        run: railway up --service worker --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  deploy-ops:
+    name: Deploy Ops to Vercel
+    runs-on: ubuntu-latest
+    if: contains(github.event.inputs.services, 'ops') || github.event.inputs.services == 'all'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9.15.4'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pnpm install --no-frozen-lockfile
+      - name: Deploy Ops to Vercel
+        run: npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+        working-directory: apps/ops
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OPS_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+
+  deploy-tech:
+    name: Deploy Tech to Vercel
+    runs-on: ubuntu-latest
+    if: contains(github.event.inputs.services, 'tech') || github.event.inputs.services == 'all'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9.15.4'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pnpm install --no-frozen-lockfile
+      - name: Deploy Tech to Vercel
+        run: npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+        working-directory: apps/tech
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_TECH_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+
+  deploy-customer:
+    name: Deploy Customer to Vercel
+    runs-on: ubuntu-latest
+    if: contains(github.event.inputs.services, 'customer') || github.event.inputs.services == 'all'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9.15.4'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pnpm install --no-frozen-lockfile
+      - name: Deploy Customer to Vercel
+        run: npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+        working-directory: apps/customer
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CUSTOMER_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

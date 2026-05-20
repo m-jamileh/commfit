@@ -1,4 +1,5 @@
-export { PrismaClient, Prisma } from '@prisma/client';
+// Re-export from the Prisma generated client (custom output: ../generated/client)
+export { PrismaClient, Prisma } from '../generated/client';
 export type {
   User,
   UserRole,
@@ -33,7 +34,7 @@ export type {
   CrmSyncLog,
   Notification,
   IdempotencyRecord,
-} from '@prisma/client';
+} from '../generated/client';
 export type {
   UserRoleEnum,
   EquipmentClass,
@@ -57,4 +58,4 @@ export type {
   SyncStatus,
   EsignDocumentStatus,
   AccountUserRole,
-} from '@prisma/client';
+} from '../generated/client';
