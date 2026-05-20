@@ -138,8 +138,8 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 
 ## M3 — Backend ∥ Frontend
 **Owners:** Backend Engineer + Frontend Engineer (parallel)
-**Status:** not_started
-**Started:** —
+**Status:** in_progress
+**Started:** 2026-05-20
 **Delivered:** —
 **Approved:** —
 
