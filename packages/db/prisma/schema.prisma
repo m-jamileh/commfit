@@ -1,0 +1,955 @@
+// Comm-Fit Service — Prisma Schema
+// M1 Deliverable
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum UserRoleEnum {
+  admin
+  dispatcher
+  account_manager
+  finance
+  sales
+  technician
+  customer_org_user
+}
+
+enum EquipmentClass {
+  cardio
+  strength
+  flooring
+  functional
+  other
+}
+
+enum JobType {
+  pm
+  sr
+  disinfecting
+  install
+}
+
+enum JobStatus {
+  scheduled
+  en_route
+  on_site
+  completed
+  cancelled
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  signed
+  expired
+  cancelled
+}
+
+enum ContractStatus {
+  draft
+  sent
+  partially_signed
+  signed
+  terminated
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  partially_paid
+  overdue
+  void
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum EquipmentCondition {
+  excellent
+  good
+  fair
+  poor
+}
+
+enum GenericStatus {
+  active
+  archived
+}
+
+enum TechType {
+  in_house
+  third_party
+}
+
+enum TechAvailabilityStatus {
+  available
+  busy
+  offline
+}
+
+enum JobPriority {
+  normal
+  urgent
+}
+
+enum SignoffStatus {
+  pending
+  signed
+  expired
+}
+
+enum ServiceType {
+  pm
+  disinfecting
+  combined
+}
+
+enum Cadence {
+  weekly
+  monthly
+  quarterly
+  semi_annual
+  annual
+}
+
+enum CommissionStatus {
+  pending
+  approved
+  paid
+}
+
+enum NotificationChannel {
+  email
+  sms
+}
+
+enum NotificationStatus {
+  pending
+  delivered
+  failed
+}
+
+enum SyncStatus {
+  pending
+  synced
+  failed
+}
+
+enum EsignDocumentStatus {
+  sent
+  partially_signed
+  signed
+  expired
+}
+
+enum AccountUserRole {
+  admin
+  user
+}
+
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
+
+model User {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String        @unique
+  name      String
+  phone     String?
+  role      UserRoleEnum
+  status    GenericStatus @default(active)
+  metadata  Json          @default("{}")
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  userRoles           UserRole[]
+  accountUsers        AccountUser[]
+  technician          Technician?
+  jobsUploaded        JobPhoto[]              @relation("UploadedByUser")
+  quotesCreated       Quote[]                 @relation("QuoteCreatedBy")
+  contractsCreated    Contract[]              @relation("ContractCreatedBy")
+  auditLogs           AuditLog[]              @relation("ActorUser")
+  notifications       Notification[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model UserRole {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  role      UserRoleEnum
+  accountId String?      @map("account_id") @db.Uuid
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id])
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([role])
+  @@map("user_roles")
+}
+
+model Account {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  billingEmail   String        @map("billing_email")
+  billingPhone   String?       @map("billing_phone")
+  billingAddress String?       @map("billing_address")
+  city           String?
+  state          String?
+  zip            String?
+  stripeCustomerId String?     @map("stripe_customer_id")
+  status         GenericStatus @default(active)
+  metadata       Json          @default("{}")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  userRoles        UserRole[]
+  accountUsers     AccountUser[]
+  locations        Location[]
+  equipment        Equipment[]
+  jobs             Job[]
+  quotes           Quote[]
+  contracts        Contract[]
+  invoices         Invoice[]
+  payments         Payment[]
+  paymentMethods   PaymentMethod[]
+  crmSyncLogs      CrmSyncLog[]
+
+  @@index([status])
+  @@index([stripeCustomerId])
+  @@map("accounts")
+}
+
+model AccountUser {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId String          @map("account_id") @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  role      AccountUserRole @default(user)
+  status    GenericStatus   @default(active)
+  metadata  Json            @default("{}")
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account Account @relation(fields: [accountId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([accountId, userId])
+  @@index([accountId])
+  @@index([userId])
+  @@index([status])
+  @@map("account_users")
+}
+
+model Location {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId    String        @map("account_id") @db.Uuid
+  name         String
+  address      String
+  city         String
+  state        String
+  zip          String
+  contactName  String?       @map("contact_name")
+  contactEmail String?       @map("contact_email")
+  contactPhone String?       @map("contact_phone")
+  notes        String?
+  status       GenericStatus @default(active)
+  metadata     Json          @default("{}")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account            Account             @relation(fields: [accountId], references: [id])
+  equipment          Equipment[]
+  jobs               Job[]
+  quotes             Quote[]
+  invoices           Invoice[]
+  contractProperties ContractProperty[]
+  partInventory      PartInventory[]
+  technicianBase     Technician[]        @relation("TechnicianBaseLocation")
+
+  @@index([accountId])
+  @@index([status])
+  @@map("locations")
+}
+
+model Equipment {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId       String             @map("account_id") @db.Uuid
+  locationId      String             @map("location_id") @db.Uuid
+  serialNumber    String?            @map("serial_number")
+  supplier        String?
+  model           String?
+  equipmentClass  EquipmentClass     @map("equipment_class")
+  installDate     DateTime?          @map("install_date") @db.Date
+  warrantyStart   DateTime?          @map("warranty_start") @db.Date
+  warrantyEnd     DateTime?          @map("warranty_end") @db.Date
+  lastServiceDate DateTime?          @map("last_service_date") @db.Date
+  condition       EquipmentCondition @default(good)
+  repairCount     Int                @default(0) @map("repair_count")
+  notes           String?
+  status          GenericStatus      @default(active)
+  metadata        Json               @default("{}")
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account      Account        @relation(fields: [accountId], references: [id])
+  location     Location       @relation(fields: [locationId], references: [id])
+  jobEquipment JobEquipment[]
+  jobPhotos    JobPhoto[]
+
+  @@index([accountId])
+  @@index([locationId])
+  @@index([status])
+  @@index([equipmentClass])
+  @@index([condition])
+  @@map("equipment")
+}
+
+model Technician {
+  id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String                 @unique @map("user_id") @db.Uuid
+  firstName          String                 @map("first_name")
+  lastName           String                 @map("last_name")
+  email              String
+  phone              String?
+  techType           TechType               @map("tech_type")
+  baseLat            Decimal?               @map("base_lat") @db.Decimal(9, 6)
+  baseLng            Decimal?               @map("base_lng") @db.Decimal(9, 6)
+  baseLocationId     String?                @map("base_location_id") @db.Uuid
+  region             String
+  availabilityStatus TechAvailabilityStatus @default(available) @map("availability_status")
+  performanceScore   Decimal?               @map("performance_score") @db.Decimal(5, 2)
+  status             GenericStatus          @default(active)
+  metadata           Json                   @default("{}")
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  user                 User                       @relation(fields: [userId], references: [id])
+  baseLocation         Location?                  @relation("TechnicianBaseLocation", fields: [baseLocationId], references: [id])
+  certifications       TechnicianCertification[]
+  regions              TechnicianRegion[]
+  jobs                 Job[]
+  commissionEarnings   CommissionEarning[]
+  commissionRuleFilter CommissionRule[]           @relation("TechnicianFilter")
+  partInventory        PartInventory[]
+
+  @@index([status])
+  @@index([techType])
+  @@index([availabilityStatus])
+  @@index([region])
+  @@map("technicians")
+}
+
+model TechnicianCertification {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  technicianId   String         @map("technician_id") @db.Uuid
+  equipmentClass EquipmentClass @map("equipment_class")
+  certifiedAt    DateTime       @map("certified_at") @db.Timestamptz()
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  technician Technician @relation(fields: [technicianId], references: [id])
+
+  @@index([technicianId])
+  @@index([equipmentClass])
+  @@map("technician_certifications")
+}
+
+model TechnicianRegion {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  technicianId String   @map("technician_id") @db.Uuid
+  region       String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  technician Technician @relation(fields: [technicianId], references: [id])
+
+  @@index([technicianId])
+  @@index([region])
+  @@map("technician_regions")
+}
+
+model Job {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId        String      @map("account_id") @db.Uuid
+  locationId       String      @map("location_id") @db.Uuid
+  technicianId     String?     @map("technician_id") @db.Uuid
+  jobType          JobType     @map("job_type")
+  status           JobStatus   @default(scheduled)
+  scheduledAt      DateTime    @map("scheduled_at") @db.Timestamptz()
+  startedAt        DateTime?   @map("started_at") @db.Timestamptz()
+  completedAt      DateTime?   @map("completed_at") @db.Timestamptz()
+  priority         JobPriority @default(normal)
+  notes            String?
+  customerNotes    String?     @map("customer_notes")
+  warrantyClaim    Boolean     @default(false) @map("warranty_claim")
+  warrantySupplier String?     @map("warranty_supplier")
+  stripeChargeId   String?     @map("stripe_charge_id")
+  statusChangedAt  DateTime?   @map("status_changed_at") @db.Timestamptz()
+  metadata         Json        @default("{}")
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account            Account            @relation(fields: [accountId], references: [id])
+  location           Location           @relation(fields: [locationId], references: [id])
+  technician         Technician?        @relation(fields: [technicianId], references: [id])
+  jobEquipment       JobEquipment[]
+  jobParts           JobPart[]
+  jobPhotos          JobPhoto[]
+  jobSignoff         JobSignoff?
+  invoices           Invoice[]
+  commissionEarnings CommissionEarning[]
+
+  @@index([accountId])
+  @@index([locationId])
+  @@index([technicianId])
+  @@index([status])
+  @@index([jobType])
+  @@index([scheduledAt])
+  @@index([priority])
+  @@map("jobs")
+}
+
+model JobEquipment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId       String   @map("job_id") @db.Uuid
+  equipmentId String   @map("equipment_id") @db.Uuid
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  job              Job                @relation(fields: [jobId], references: [id])
+  equipment        Equipment          @relation(fields: [equipmentId], references: [id])
+  invoiceLineItems InvoiceLineItem[]
+
+  @@index([jobId])
+  @@index([equipmentId])
+  @@map("job_equipment")
+}
+
+model JobPart {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId        String   @map("job_id") @db.Uuid
+  partId       String   @map("part_id") @db.Uuid
+  quantity     Int
+  unitCostCents BigInt  @map("unit_cost_cents")
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  job  Job  @relation(fields: [jobId], references: [id])
+  part Part @relation(fields: [partId], references: [id])
+
+  @@index([jobId])
+  @@index([partId])
+  @@map("job_parts")
+}
+
+model JobPhoto {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId            String   @map("job_id") @db.Uuid
+  equipmentId      String?  @map("equipment_id") @db.Uuid
+  url              String
+  caption          String?
+  uploadedByUserId String?  @map("uploaded_by_user_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  job            Job        @relation(fields: [jobId], references: [id])
+  equipment      Equipment? @relation(fields: [equipmentId], references: [id])
+  uploadedByUser User?      @relation("UploadedByUser", fields: [uploadedByUserId], references: [id])
+
+  @@index([jobId])
+  @@index([equipmentId])
+  @@map("job_photos")
+}
+
+model JobSignoff {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId             String        @unique @map("job_id") @db.Uuid
+  signerName        String        @map("signer_name")
+  signerEmail       String        @map("signer_email")
+  docusignEnvelopeId String?      @map("docusign_envelope_id")
+  signingUrl        String?       @map("signing_url")
+  signedAt          DateTime?     @map("signed_at") @db.Timestamptz()
+  status            SignoffStatus @default(pending)
+  metadata          Json          @default("{}")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@index([status])
+  @@index([docusignEnvelopeId])
+  @@map("job_signoffs")
+}
+
+model Quote {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId         String      @map("account_id") @db.Uuid
+  locationId        String      @map("location_id") @db.Uuid
+  createdByUserId   String?     @map("created_by_user_id") @db.Uuid
+  jobType           JobType     @map("job_type")
+  title             String
+  notes             String?
+  validUntil        DateTime?   @map("valid_until") @db.Date
+  discountPct       Decimal     @default(0) @map("discount_pct") @db.Decimal(5, 2)
+  taxPct            Decimal     @default(0) @map("tax_pct") @db.Decimal(5, 2)
+  subtotalCents     BigInt      @default(0) @map("subtotal_cents")
+  totalCents        BigInt      @default(0) @map("total_cents")
+  docusignEnvelopeId String?    @map("docusign_envelope_id")
+  signedAt          DateTime?   @map("signed_at") @db.Timestamptz()
+  status            QuoteStatus @default(draft)
+  metadata          Json        @default("{}")
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account       Account          @relation(fields: [accountId], references: [id])
+  location      Location         @relation(fields: [locationId], references: [id])
+  createdByUser User?            @relation("QuoteCreatedBy", fields: [createdByUserId], references: [id])
+  lineItems     QuoteLineItem[]
+
+  @@index([accountId])
+  @@index([locationId])
+  @@index([status])
+  @@index([jobType])
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteId       String   @map("quote_id") @db.Uuid
+  description   String
+  quantity      Int
+  unitPriceCents BigInt  @map("unit_price_cents")
+  totalCents    BigInt   @map("total_cents")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  quote Quote @relation(fields: [quoteId], references: [id])
+
+  @@index([quoteId])
+  @@map("quote_line_items")
+}
+
+model Contract {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId         String         @map("account_id") @db.Uuid
+  createdByUserId   String?        @map("created_by_user_id") @db.Uuid
+  title             String
+  serviceType       ServiceType    @map("service_type")
+  cadence           Cadence
+  startDate         DateTime       @map("start_date") @db.Date
+  endDate           DateTime       @map("end_date") @db.Date
+  autoRenew         Boolean        @default(false) @map("auto_renew")
+  autoPay           Boolean        @default(false) @map("auto_pay")
+  paymentMethodId   String?        @map("payment_method_id") @db.Uuid
+  totalValueCents   BigInt         @default(0) @map("total_value_cents")
+  docusignEnvelopeId String?       @map("docusign_envelope_id")
+  signedAt          DateTime?      @map("signed_at") @db.Timestamptz()
+  status            ContractStatus @default(draft)
+  metadata          Json           @default("{}")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account         Account            @relation(fields: [accountId], references: [id])
+  createdByUser   User?              @relation("ContractCreatedBy", fields: [createdByUserId], references: [id])
+  paymentMethod   PaymentMethod?     @relation(fields: [paymentMethodId], references: [id])
+  properties      ContractProperty[]
+  invoices        Invoice[]
+
+  @@index([accountId])
+  @@index([status])
+  @@index([serviceType])
+  @@index([cadence])
+  @@map("contracts")
+}
+
+model ContractProperty {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractId String   @map("contract_id") @db.Uuid
+  locationId String   @map("location_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  contract Contract @relation(fields: [contractId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@unique([contractId, locationId])
+  @@index([contractId])
+  @@index([locationId])
+  @@map("contract_properties")
+}
+
+model Invoice {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId           String        @map("account_id") @db.Uuid
+  locationId          String?       @map("location_id") @db.Uuid
+  jobId               String?       @map("job_id") @db.Uuid
+  contractId          String?       @map("contract_id") @db.Uuid
+  invoiceNumber       String        @unique @map("invoice_number")
+  dueDate             DateTime      @map("due_date") @db.Date
+  subtotalCents       BigInt        @default(0) @map("subtotal_cents")
+  taxCents            BigInt        @default(0) @map("tax_cents")
+  totalCents          BigInt        @default(0) @map("total_cents")
+  paidCents           BigInt        @default(0) @map("paid_cents")
+  stripeInvoiceId     String?       @map("stripe_invoice_id")
+  warrantyClaim       Boolean       @default(false) @map("warranty_claim")
+  warrantySupplier    String?       @map("warranty_supplier")
+  warrantyAmountCents BigInt        @default(0) @map("warranty_amount_cents")
+  status              InvoiceStatus @default(draft)
+  notes               String?
+  metadata            Json          @default("{}")
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account            Account              @relation(fields: [accountId], references: [id])
+  location           Location?            @relation(fields: [locationId], references: [id])
+  job                Job?                 @relation(fields: [jobId], references: [id])
+  contract           Contract?            @relation(fields: [contractId], references: [id])
+  lineItems          InvoiceLineItem[]
+  payments           Payment[]
+  commissionEarnings CommissionEarning[]
+
+  @@index([accountId])
+  @@index([locationId])
+  @@index([jobId])
+  @@index([contractId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId      String   @map("invoice_id") @db.Uuid
+  description    String
+  quantity       Int
+  unitPriceCents BigInt   @map("unit_price_cents")
+  totalCents     BigInt   @map("total_cents")
+  jobEquipmentId String?  @map("job_equipment_id") @db.Uuid
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  invoice            Invoice             @relation(fields: [invoiceId], references: [id])
+  jobEquipment       JobEquipment?       @relation(fields: [jobEquipmentId], references: [id])
+  commissionEarnings CommissionEarning[]
+
+  @@index([invoiceId])
+  @@index([jobEquipmentId])
+  @@map("invoice_line_items")
+}
+
+model PaymentMethod {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId             String        @map("account_id") @db.Uuid
+  stripePaymentMethodId String?       @map("stripe_payment_method_id")
+  last4                 String
+  brand                 String
+  expMonth              Int           @map("exp_month")
+  expYear               Int           @map("exp_year")
+  isDefault             Boolean       @default(false) @map("is_default")
+  status                GenericStatus @default(active)
+  metadata              Json          @default("{}")
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account   Account   @relation(fields: [accountId], references: [id])
+  payments  Payment[]
+  contracts Contract[]
+
+  @@index([accountId])
+  @@index([status])
+  @@map("payment_methods")
+}
+
+model Payment {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId       String        @map("account_id") @db.Uuid
+  invoiceId       String        @map("invoice_id") @db.Uuid
+  paymentMethodId String?       @map("payment_method_id") @db.Uuid
+  amountCents     BigInt        @map("amount_cents")
+  currency        String        @default("usd")
+  stripePaymentId String?       @map("stripe_payment_id")
+  idempotencyKey  String        @unique @map("idempotency_key")
+  status          PaymentStatus @default(pending)
+  failureReason   String?       @map("failure_reason")
+  refundedAt      DateTime?     @map("refunded_at") @db.Timestamptz()
+  metadata        Json          @default("{}")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  account       Account        @relation(fields: [accountId], references: [id])
+  invoice       Invoice        @relation(fields: [invoiceId], references: [id])
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([accountId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@map("payments")
+}
+
+model CommissionRule {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  description          String?
+  techTypeFilter       TechType?       @map("tech_type_filter")
+  jobTypeFilter        JobType?        @map("job_type_filter")
+  equipmentClassFilter EquipmentClass? @map("equipment_class_filter")
+  technicianIdFilter   String?         @map("technician_id_filter") @db.Uuid
+  ratePct              Decimal         @map("rate_pct") @db.Decimal(5, 2)
+  bonusThresholdJobs   Int?            @map("bonus_threshold_jobs")
+  bonusRatePct         Decimal?        @map("bonus_rate_pct") @db.Decimal(5, 2)
+  priority             Int             @default(0)
+  active               Boolean         @default(true)
+  metadata             Json            @default("{}")
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt            DateTime        @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  technicianFilter   Technician?         @relation("TechnicianFilter", fields: [technicianIdFilter], references: [id])
+  commissionEarnings CommissionEarning[]
+
+  @@index([active])
+  @@index([priority])
+  @@index([techTypeFilter])
+  @@index([jobTypeFilter])
+  @@map("commission_rules")
+}
+
+model CommissionEarning {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  technicianId        String           @map("technician_id") @db.Uuid
+  invoiceId           String           @map("invoice_id") @db.Uuid
+  invoiceLineItemId   String?          @map("invoice_line_item_id") @db.Uuid
+  commissionRuleId    String?          @map("commission_rule_id") @db.Uuid
+  jobId               String?          @map("job_id") @db.Uuid
+  baseAmountCents     BigInt           @map("base_amount_cents")
+  commissionPct       Decimal          @map("commission_pct") @db.Decimal(5, 2)
+  commissionCents     BigInt           @map("commission_cents")
+  ruleTrace           Json             @map("rule_trace")
+  status              CommissionStatus @default(pending)
+  paidAt              DateTime?        @map("paid_at") @db.Timestamptz()
+  metadata            Json             @default("{}")
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  technician       Technician        @relation(fields: [technicianId], references: [id])
+  invoice          Invoice           @relation(fields: [invoiceId], references: [id])
+  invoiceLineItem  InvoiceLineItem?  @relation(fields: [invoiceLineItemId], references: [id])
+  commissionRule   CommissionRule?   @relation(fields: [commissionRuleId], references: [id])
+  job              Job?              @relation(fields: [jobId], references: [id])
+
+  @@index([technicianId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([jobId])
+  @@map("commission_earnings")
+}
+
+model Part {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sku           String        @unique
+  name          String
+  description   String?
+  supplier      String?
+  unitCostCents BigInt        @map("unit_cost_cents")
+  status        GenericStatus @default(active)
+  metadata      Json          @default("{}")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  jobParts      JobPart[]
+  partInventory PartInventory[]
+
+  @@index([status])
+  @@index([sku])
+  @@map("parts")
+}
+
+model PartInventory {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partId           String   @map("part_id") @db.Uuid
+  locationId       String?  @map("location_id") @db.Uuid
+  technicianId     String?  @map("technician_id") @db.Uuid
+  quantity         Int      @default(0)
+  reorderThreshold Int      @default(0) @map("reorder_threshold")
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  part       Part        @relation(fields: [partId], references: [id])
+  location   Location?   @relation(fields: [locationId], references: [id])
+  technician Technician? @relation(fields: [technicianId], references: [id])
+
+  @@index([partId])
+  @@index([locationId])
+  @@index([technicianId])
+  @@map("part_inventory")
+}
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  action      String
+  before      Json?
+  after       Json?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  actorUser User? @relation("ActorUser", fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model EmailInbox {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  toEmail   String   @map("to_email")
+  subject   String
+  body      String
+  sentAt    DateTime @map("sent_at") @db.Timestamptz()
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([toEmail])
+  @@index([sentAt])
+  @@map("email_inbox")
+}
+
+model EsignEnvelope {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentType String              @map("document_type")
+  documentId   String              @map("document_id")
+  signerEmail  String              @map("signer_email")
+  signerName   String              @map("signer_name")
+  envelopeRef  String?             @map("envelope_ref")
+  signingUrl   String?             @map("signing_url")
+  status       EsignDocumentStatus @default(sent)
+  signedAt     DateTime?           @map("signed_at") @db.Timestamptz()
+  metadata     Json                @default("{}")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([documentType, documentId])
+  @@index([status])
+  @@index([signerEmail])
+  @@map("esign_envelopes")
+}
+
+model ErpSyncLog {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityType String     @map("entity_type")
+  entityId   String     @map("entity_id")
+  action     String
+  payload    Json
+  status     SyncStatus @default(pending)
+  error      String?
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("erp_sync_logs")
+}
+
+model CrmSyncLog {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId  String?    @map("account_id") @db.Uuid
+  entityType String     @map("entity_type")
+  entityId   String     @map("entity_id")
+  eventType  String     @map("event_type")
+  payload    Json
+  status     SyncStatus @default(pending)
+  error      String?
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  account Account? @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@map("crm_sync_logs")
+}
+
+model Notification {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String?             @map("user_id") @db.Uuid
+  templateKey String              @map("template_key")
+  channel     NotificationChannel
+  status      NotificationStatus  @default(pending)
+  payload     Json
+  error       String?
+  metadata    Json                @default("{}")
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([channel])
+  @@index([templateKey])
+  @@map("notifications")
+}
+
+model IdempotencyRecord {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String   @unique
+  requestHash String   @map("request_hash")
+  response    Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz()
+
+  @@index([key])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
