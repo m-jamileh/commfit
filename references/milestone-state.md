@@ -147,30 +147,39 @@ Last updated: 2026-05-20 (M1 done / M2 in_review)
 
 **Status:** in_review (pending CTO verification)
 **Branch:** `feat/m3-backend-modules-and-services`
-**Commit SHA:** `9f56d15`
+**Commit SHA:** `8d72ca9`
 **Tracking issue:** [COM-16](/COM/issues/COM-16) (replacement for zombie COM-11)
 
-**Deliverables (all present at SHA `9f56d15`):**
+**Commit log (branch tip):**
+- `8d72ca9` — fix(m3-backend): type-safety fixes, commission engine tests, OpenAPI setup
+- `b29a7a0` — chore(m3-backend): update milestone-state.md with M3 Backend deliverable paths
+- `9f56d15` — feat(m3-backend): complete all 15 modules, 5 workers, 6 mock providers, seed scripts
+- `f7cf96d` — feat(m3-backend): accounts, locations, equipment modules + all 6 mock service providers
+
+**Deliverables (all present at SHA `8d72ca9`):**
 - All 15 backend modules implemented end-to-end — `/apps/api/src/modules/*/` (accounts, locations, equipment, technicians, jobs, quotes, contracts, invoices, payments, commission, parts, reports, notifications, audit, webhooks)
 - All 6 service-abstraction mock providers — `/apps/api/src/services/*/mock.*.provider.ts` (email, payment, esign, warranty, erp, crm)
 - All 5 worker queue processors — `/apps/worker/src/processors/` (email-dispatch, scheduled-pm-rollover, recurring-autopay-simulation, commission-recompute, audit-async)
 - AuditLogInterceptor + AuditInterceptor wired globally — `/apps/api/src/common/interceptors/audit-log.interceptor.ts`, `audit.interceptor.ts`
 - IdempotencyInterceptor wired globally with 24h TTL — `/apps/api/src/common/interceptors/idempotency.interceptor.ts`
-- CommissionEngineService — `/apps/api/src/modules/commission/commission-engine.service.ts`
+- CommissionEngineService with unit tests (5 passing) — `/apps/api/src/modules/commission/commission-engine.service.ts`, `commission-engine.spec.ts`
 - Seed scripts producing full realistic dataset — `/packages/db/src/seed/` (accounts, locations, equipment, technicians, users, jobs, parts, commission-rules, index.ts)
 - `pnpm db:seed` root script wired; `pnpm api:regenerate` root script added
+- Swagger/OpenAPI mounted at `/v1/openapi.json` — `apps/api/src/main.ts`
 - Full workspace typecheck passes — 11/11 tasks clean
+- Full workspace build passes — 9/9 tasks clean
+- All tests pass — 5 commission engine tests, 0 failures
 - `/packages/api-client` regeneration available via `pnpm api:regenerate`
 
 **CTO verification steps:**
-1. `git log --oneline -3` — confirm SHA `9f56d15`
+1. `git log --oneline -5` — confirm SHA `8d72ca9` at tip of `feat/m3-backend-modules-and-services`
 2. `pnpm typecheck` — expect 11/11 tasks successful, no errors
-3. Spot-check: `cat apps/api/src/app.module.ts` — all 15 modules + 6 service modules registered; 3 global interceptors wired
-4. Spot-check: `ls apps/worker/src/processors/` — 5 processors present
-5. Spot-check: `ls packages/db/src/seed/` — 9 seed files incl. index.ts and commission-rules.seed.ts
-6. End-to-end smoke: `docker compose up -d && pnpm db:seed` — seeds the full realistic dataset
-
-**Note:** COM-16 has a stale execution lock (same sticky-lock pattern as COM-11). CTO must force-clear or create COM-17 to post the final status update. Work is complete on-disk regardless.
+3. `pnpm test` — expect 5 passed (commission engine), 0 failed
+4. `pnpm build` — expect 9/9 tasks successful
+5. Spot-check: `cat apps/api/src/app.module.ts` — all 15 modules + 6 service modules registered; 3 global interceptors wired
+6. Spot-check: `ls apps/worker/src/processors/` — 5 processors present
+7. Spot-check: `ls packages/db/src/seed/` — 9 seed files incl. index.ts and commission-rules.seed.ts
+8. End-to-end smoke: `docker compose up -d && pnpm db:seed` — seeds the full realistic dataset
 
 ### M3 Frontend slice
 
