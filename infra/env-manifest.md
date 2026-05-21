@@ -137,4 +137,4 @@ These values are **not** environment variables. They exist only in the database 
 
 4. **Railway variable groups:** Consider creating a Railway variable group named `commfit-shared` containing `DATABASE_URL`, `REDIS_URL`, and `NODE_ENV`, then linking both the `api` and `worker` services to it to avoid duplication.
 
-5. **Local development:** Copy `.env.example` (when created) to `.env.local` and fill in local values. The docker-compose stack provides Postgres and Redis with the default local credentials shown in the examples above.
+5. **Local development:** Copy `.env.example` to `.env.local` and fill in local values. The docker-compose stack provides Postgres and Redis with the default local credentials shown in the examples above. Set `WORKER_PORT=3010` (already the default in `.env.example`) when running fully native to avoid colliding with the `apps/ops` Next.js dev server on port 3001.
