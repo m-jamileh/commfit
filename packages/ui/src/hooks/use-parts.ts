@@ -1,6 +1,7 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockParts } from "../lib/mock-data";
+import { useCommfitClient } from "../lib/commfit-client";
 
 export function useParts(search?: string) {
   return useQuery({
@@ -30,5 +31,16 @@ export function usePart(id: string) {
       return mockParts.find((p) => p.id === id) ?? null;
     },
     enabled: !!id,
+  });
+}
+
+export function useCreatePart() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) => client.parts.create(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["parts"] });
+    },
   });
 }

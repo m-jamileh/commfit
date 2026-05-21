@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { FileText, Download, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader, Card, Pill, Button, useContracts } from "@commfit/ui";
 import type { ContractStatus } from "@commfit/shared-types";
@@ -14,6 +15,7 @@ const statusColors: Record<ContractStatus, "default" | "info" | "warning" | "suc
 };
 
 export default function CustomerContractsPage() {
+  const router = useRouter();
   const { data: contracts = [], isLoading } = useContracts({ accountId: DEMO_ACCOUNT_ID });
 
   return (
@@ -61,13 +63,17 @@ export default function CustomerContractsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => alert("PDF download — backend integration pending.")}
+                    onClick={() => alert("PDF download — M5 scope.")}
                   >
                     <Download className="h-3.5 w-3.5" />
                   </Button>
                 )}
-                {c.status === "sent" && (
-                  <Button variant="primary" size="sm">
+                {(c.status === "sent" || c.status === "partially_signed") && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => router.push(`/esign/sign/${c.docusignEnvelopeId ?? c.id}?contractId=${c.id}`)}
+                  >
                     Sign Now
                   </Button>
                 )}

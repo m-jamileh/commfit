@@ -3,6 +3,8 @@ import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Lint runs via `pnpm lint` (flat ESLint config); skip the redundant build-time check
+  eslint: { ignoreDuringBuilds: true },
   transpilePackages: ['@commfit/ui', '@commfit/api-client', '@commfit/shared-types'],
 };
 
