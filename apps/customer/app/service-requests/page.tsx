@@ -137,6 +137,7 @@ export default function ServiceRequestsPage() {
                 <textarea
                   className="rounded border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                   rows={4}
+                  name="description"
                   placeholder="Describe the issue..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

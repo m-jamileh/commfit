@@ -66,6 +66,7 @@ export default function SignOffPage() {
           <div className="space-y-3">
             <Input
               label="Customer Name"
+              name="customer-name"
               placeholder="Full name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
@@ -73,6 +74,7 @@ export default function SignOffPage() {
             <Input
               label="Customer Email (optional)"
               type="email"
+              name="customer-email"
               placeholder="email@example.com"
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}

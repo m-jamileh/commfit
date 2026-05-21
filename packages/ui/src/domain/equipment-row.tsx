@@ -1,3 +1,4 @@
+"use client";
 import * as React from "react";
 import { MoreHorizontal, Wrench, Archive } from "lucide-react";
 import { cn } from "../lib/utils";

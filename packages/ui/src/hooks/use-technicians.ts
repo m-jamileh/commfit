@@ -1,3 +1,4 @@
+"use client";
 import { useQuery } from "@tanstack/react-query";
 import { mockTechnicians } from "../lib/mock-data";
 import type { TechAvailabilityStatus, TechType } from "@commfit/shared-types";

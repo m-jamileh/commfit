@@ -1,3 +1,4 @@
+"use client";
 import { useQuery } from "@tanstack/react-query";
 import { mockContracts } from "../lib/mock-data";
 import type { ContractStatus } from "@commfit/shared-types";

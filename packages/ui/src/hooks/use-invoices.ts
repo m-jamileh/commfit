@@ -1,3 +1,4 @@
+"use client";
 import { useQuery } from "@tanstack/react-query";
 import { mockInvoices } from "../lib/mock-data";
 import type { InvoiceStatus } from "@commfit/shared-types";
