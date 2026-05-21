@@ -125,6 +125,27 @@ export class JobsService {
         ...(statusChanging && { statusChangedAt: new Date() }),
       },
     });
+
+    // Emit one named audit entry per equipment marked done (fire-and-forget,
+    // same queue as AuditLogInterceptor).
+    const incomingEquipDone = mergedMetadata !== undefined
+      ? (dto.metadata as Record<string, unknown>).equipmentDone
+      : undefined;
+    if (incomingEquipDone && typeof incomingEquipDone === 'object') {
+      for (const [equipmentId, value] of Object.entries(
+        incomingEquipDone as Record<string, unknown>,
+      )) {
+        this.auditQueue
+          .add('audit-async', {
+            entityType: 'job',
+            entityId: id,
+            action: 'equipment_mark_done',
+            after: { equipmentId, ...(value as Record<string, unknown>) },
+          })
+          .catch(() => {});
+      }
+    }
+
     return this.mapToDto(job);
   }
 
