@@ -6,13 +6,24 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  AccountResponseDto,
+  CreateAccountDto,
+  PaginatedResponseDto,
+  PaginationQueryDto,
+  UpdateAccountDto,
+} from '@commfit/shared-types';
 import { AccountsService } from './accounts.service';
 
-const NOT_IMPLEMENTED = { statusCode: 501, message: 'Not implemented' };
+class AddUserDto {
+  userId!: string;
+  role!: 'admin' | 'user';
+}
 
 @ApiTags('accounts')
 @Controller('accounts')
@@ -20,33 +31,59 @@ export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all accounts' })
-  findAll(): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  @ApiOperation({ summary: 'List all accounts (paginated)' })
+  findAll(
+    @Query() query: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<AccountResponseDto>> {
+    return this.accountsService.findAll(query);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create an account' })
-  create(@Body() _body: unknown): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  create(@Body() body: CreateAccountDto): Promise<AccountResponseDto> {
+    return this.accountsService.create(body);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get an account by ID' })
-  findOne(@Param('id') _id: string): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  findOne(@Param('id') id: string): Promise<AccountResponseDto> {
+    return this.accountsService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an account' })
-  update(@Param('id') _id: string, @Body() _body: unknown): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateAccountDto,
+  ): Promise<AccountResponseDto> {
+    return this.accountsService.update(id, body);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive an account' })
-  archive(@Param('id') _id: string): typeof NOT_IMPLEMENTED {
-    return NOT_IMPLEMENTED;
+  archive(@Param('id') id: string): Promise<AccountResponseDto> {
+    return this.accountsService.archive(id);
+  }
+
+  @Post(':id/users')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add a user to an account' })
+  async addUser(
+    @Param('id') accountId: string,
+    @Body() body: AddUserDto,
+  ): Promise<void> {
+    return this.accountsService.addUser(accountId, body.userId, body.role);
+  }
+
+  @Delete(':accountId/users/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a user from an account' })
+  async removeUser(
+    @Param('accountId') accountId: string,
+    @Param('userId') userId: string,
+  ): Promise<void> {
+    return this.accountsService.removeUser(accountId, userId);
   }
 }

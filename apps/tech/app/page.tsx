@@ -1,9 +1,5 @@
-// Technician PWA stub — M3 Frontend implements full screens
+import { redirect } from "next/navigation";
+
 export default function TechHomePage() {
-  return (
-    <main>
-      <h1>Comm-Fit Tech PWA</h1>
-      <p>M3 Frontend implementation pending.</p>
-    </main>
-  );
+  redirect("/today");
 }

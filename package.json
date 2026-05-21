@@ -8,7 +8,10 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "format": "prettier --write"
+    "format": "prettier --write",
+    "db:seed": "pnpm --filter @commfit/db seed",
+    "api:generate-spec": "pnpm --filter @commfit/api generate:openapi",
+    "api:regenerate": "pnpm api:generate-spec && pnpm --filter @commfit/api-client generate"
   },
   "devDependencies": {
     "eslint": "^9.17.0",
