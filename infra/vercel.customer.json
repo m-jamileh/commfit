@@ -6,15 +6,6 @@
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_SENTRY_DSN": "@commfit-customer-sentry-dsn",
-    "SENTRY_DSN": "@commfit-customer-sentry-dsn",
-    "SENTRY_ORG": "@commfit-sentry-org",
-    "SENTRY_AUTH_TOKEN": "@commfit-sentry-auth-token",
-    "NEXT_PUBLIC_SUPABASE_URL": "@commfit-supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@commfit-supabase-anon-key",
-    "NEXT_PUBLIC_API_URL": "@commfit-customer-api-url"
-  },
   "headers": [
     {
       "source": "/(.*)",
