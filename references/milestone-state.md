@@ -360,6 +360,12 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - 3-way merge into `dev` as `b750d1c` (preserves COM-20 `tech-availability-row.tsx` already on dev) and pushed to `origin/dev`.
 - Docker image boot was explicitly deferred to founder/CI (Docker not available in the agent sandbox). Dockerfile structure (multi-stage builds, EXPOSE 3000/3001, CMD targets) reviewed manually by DevOps and confirmed correct. The live CI build of these images is the actual runtime path; the founder will run `docker compose up` as part of the M4 deploy-runbook smoke.
 
+**Docker correctness follow-up (CEO Type C, 2026-05-21, dev tip `2f09aa6`):**
+- `a92d9c8` (`fix(docker)`) was on `feat/m4-pre-flight-prep` after the CTO merge at `b750d1c`; reviewed and merged into `dev`.
+- Three correctness fixes: (1) removed `COPY packages/api-client/dist` from both runner stages — api-client is not built by the builder stage, so the COPY would fail on a clean checkout; (2) added `pnpm-lock.yaml` to the deps stage COPY for `--frozen-lockfile` reproducibility; (3) added `.dockerignore` (excludes node_modules, .next, .git, dist) to speed builds and prevent local artefacts contaminating the image.
+- `infra/env-manifest.md` note 5 updated with `WORKER_PORT=3010` collision reminder. No source code touched.
+- Rebased cleanly onto `origin/dev` and pushed as `2f09aa6`.
+
 ### M4 deploy (Founder-led, outstanding)
 
 **Deliverables (founder runs `infra/deploy-runbook.md`):**
