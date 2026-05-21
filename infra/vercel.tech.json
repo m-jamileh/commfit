@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "commfit-tech",
-  "buildCommand": "pnpm --filter @commfit/tech build",
+  "buildCommand": "pnpm exec turbo run build --filter=@commfit/tech",
   "outputDirectory": "apps/tech/.next",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs",

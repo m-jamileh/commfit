@@ -1,6 +1,7 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockEquipment } from "../lib/mock-data";
+import { useCommfitClient } from "../lib/commfit-client";
 import type { EquipmentCondition } from "@commfit/shared-types";
 
 interface EquipmentFilters {
@@ -31,5 +32,18 @@ export function useEquipmentItem(id: string) {
       return mockEquipment.find((e) => e.id === id) ?? null;
     },
     enabled: !!id,
+  });
+}
+
+export function useUpdateEquipment() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.equipment.update(id, body),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["equipment", id] });
+      void qc.invalidateQueries({ queryKey: ["equipment"] });
+    },
   });
 }

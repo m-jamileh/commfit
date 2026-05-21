@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Briefcase, Navigation, MapPin, CheckCircle2, RefreshCw } from "lucide-react";
 import {
   Kpi,
@@ -9,8 +10,21 @@ import {
   PageHeader,
   Card,
   AccentRail,
+  Button,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalFooter,
   useJobs,
   useTechnicians,
+  useAssignTechnician,
   mockTechnicians,
   mockLocations,
   type JobCardData,
@@ -36,6 +50,10 @@ function buildActivityFeed(): ActivityEvent[] {
 export default function DispatchPage() {
   const { data: jobs = [], isLoading: jobsLoading } = useJobs();
   const { data: techs = [], isLoading: techsLoading } = useTechnicians();
+  const assignTech = useAssignTechnician();
+
+  const [assignJobId, setAssignJobId] = useState<string | null>(null);
+  const [selectedTechId, setSelectedTechId] = useState<string>("");
 
   const activeJobs = jobs.filter((j) => j.status !== "completed" && j.status !== "cancelled");
   const enRoute = jobs.filter((j) => j.status === "en_route");
@@ -83,6 +101,21 @@ export default function DispatchPage() {
   });
 
   const activity = buildActivityFeed();
+
+  const assignJob = assignJobId ? jobs.find((j) => j.id === assignJobId) : null;
+
+  function handleConfirmAssign() {
+    if (!assignJobId || !selectedTechId) return;
+    assignTech.mutate(
+      { id: assignJobId, technicianId: selectedTechId },
+      {
+        onSuccess: () => {
+          setAssignJobId(null);
+          setSelectedTechId("");
+        },
+      }
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -137,7 +170,7 @@ export default function DispatchPage() {
           {jobsLoading ? (
             <div className="text-sm text-text-muted py-4">Loading jobs...</div>
           ) : (
-            <JobsBoard jobs={jobCards} className="flex-1" />
+            <JobsBoard jobs={jobCards} className="flex-1" onJobClick={(id) => { setAssignJobId(id); setSelectedTechId(""); }} />
           )}
           {/* Map preview */}
           <MapPreview className="h-[280px]" />
@@ -166,6 +199,40 @@ export default function DispatchPage() {
           </Card>
         </div>
       </div>
+
+      {/* Assign technician modal */}
+      <Modal open={!!assignJobId} onOpenChange={(open) => !open && setAssignJobId(null)}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Assign Technician</ModalTitle>
+            {assignJob && (
+              <ModalDescription>
+                {assignJob.jobType.toUpperCase()} — {locationMap.get(assignJob.locationId)?.name ?? assignJob.locationId}
+              </ModalDescription>
+            )}
+          </ModalHeader>
+          <div className="mt-4">
+            <Select value={selectedTechId} onValueChange={setSelectedTechId}>
+              <SelectTrigger label="Technician">
+                <SelectValue placeholder="Select technician..." />
+              </SelectTrigger>
+              <SelectContent>
+                {techs.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.firstName} {t.lastName} — {t.region} ({t.availabilityStatus})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setAssignJobId(null)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleConfirmAssign} disabled={!selectedTechId || assignTech.isPending}>
+              {assignTech.isPending ? "Assigning..." : "Confirm"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

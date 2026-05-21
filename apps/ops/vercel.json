@@ -1,11 +1,8 @@
 {
-  "version": 2,
-  "name": "commfit-ops",
   "buildCommand": "pnpm exec turbo run build --filter=@commfit/ops",
-  "outputDirectory": "apps/ops/.next",
+  "outputDirectory": ".next",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
-  "regions": ["iad1"],
   "headers": [
     {
       "source": "/(.*)",
