@@ -45,6 +45,69 @@ Ensure you have push access to the `commfit` GitHub repository. The default bran
 
 ---
 
+## Local Pre-Flight Checks
+
+Run these on your machine before touching any production infrastructure. They verify the local stack is healthy and that M3 tooling works end-to-end.
+
+### Port Collision Gotcha — WORKER_PORT
+
+When running the full stack natively with `pnpm dev`, Next.js starts three dev servers:
+
+| App | Default port |
+|---|---|
+| `apps/ops` | 3001 |
+| `apps/tech` | 3002 |
+| `apps/customer` | 3003 |
+
+The worker's NestJS HTTP server defaults to port **3001** (`WORKER_PORT` env var). This creates a port collision with `apps/ops` when everything runs natively.
+
+**Fix:** Copy `.env.example` to `.env.local` and keep `WORKER_PORT=3010`. This shifts the worker health endpoint to `http://localhost:3010/v1/health` in native dev without changing the production default (`3001` in `infra/env-manifest.md` and `railway.toml`).
+
+```bash
+cp .env.example .env.local
+# Edit .env.local and fill in your Supabase / Redis / etc. values
+# WORKER_PORT=3010 is already set in the example — leave it as-is
+```
+
+> **Docker Compose**: The docker-compose stack sets `WORKER_PORT=3001` inside the worker container and maps host port `3001:3001`. No collision because Next.js dev servers are not running inside Docker. Run `docker compose up` or keep native dev separate — do not mix them on the same host.
+
+### M3 Root Scripts
+
+The following scripts are available at the repo root and wrap the relevant package filters:
+
+| Script | What it does |
+|---|---|
+| `pnpm db:seed` | Runs `packages/db` seed — creates demo company, users, and reference data. Equivalent to `pnpm --filter @commfit/db seed`. |
+| `pnpm api:generate-spec` | Boots the API and writes `openapi.json` from the live Swagger document. Run this after any API contract change. |
+| `pnpm api:regenerate` | Runs `api:generate-spec` then regenerates `packages/api-client` from the updated spec. |
+
+Run these in order on a fresh checkout to verify M3 tooling:
+
+```bash
+# 1. Bring up infra (Postgres + Redis)
+docker compose up postgres redis -d
+
+# 2. Apply migrations
+pnpm --filter @commfit/db migrate deploy
+
+# 3. Seed demo data
+pnpm db:seed
+
+# 4. Start the API (separate terminal)
+pnpm --filter @commfit/api start:dev
+
+# 5. Generate the OpenAPI spec and regenerate the client
+pnpm api:regenerate
+# Verify: packages/api-client/dist/ is populated and packages/api-client/src/ is up to date
+
+# 6. Verify health endpoints
+curl http://localhost:3000/v1/health          # API
+curl http://localhost:3010/v1/health          # Worker (native dev; port 3010 per .env.local)
+curl http://localhost:3000/v1/openapi.json    # OpenAPI JSON (M3 addition)
+```
+
+---
+
 ## Step 1: Supabase Setup
 
 ### 1.1 Create the Supabase Project
@@ -104,10 +167,13 @@ pnpm --filter @commfit/db studio
 ### 1.4 Run Database Seed
 
 ```bash
+# Either of these is equivalent:
+pnpm db:seed
+# or
 pnpm --filter @commfit/db seed
 ```
 
-This creates the demo company, demo users, and baseline reference data required for M4 smoke tests.
+This creates the demo company, demo users (Operations Manager, Technician, Customer), and baseline reference data (service types, equipment catalogue) required for the M4 smoke tests in Step 7.
 
 ---
 
@@ -162,6 +228,10 @@ SENTRY_TRACES_SAMPLE_RATE = 0.1
 ```bash
 curl https://commfit-api.up.railway.app/v1/health
 # Expected: {"status":"ok","timestamp":"..."}
+
+# The raw OpenAPI JSON is also available (M3 addition):
+curl https://commfit-api.up.railway.app/v1/openapi.json | head -20
+# Expected: {"openapi":"3.0.0","info":{"title":"Comm-Fit API", ...}}
 ```
 
 ### 2.5 Deploy the Worker Service
