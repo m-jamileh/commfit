@@ -1,6 +1,6 @@
 # Milestone State
 
-Last updated: 2026-05-20 (M1 done / M2 done / M3 Backend in_review + Frontend in_review — joint smoke pending)
+Last updated: 2026-05-21 (M1 done / M2 done / M3 done / M4 in_progress — pre-flight prep merged, founder-led deploy outstanding)
 
 ## M1 — Architecture & Contracts
 **Owner:** Principal Architect
@@ -330,12 +330,45 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 
 ## M4 — Pre-launch (founder-led)
 **Owner:** Founder + CTO
-**Status:** not_started
-**Started:** —
+**Status:** in_progress (pre-flight prep delivered; founder-led deploy outstanding)
+**Started:** 2026-05-20
 **Delivered:** —
 **Approved:** —
 
-**Deliverables:**
+### M4 pre-flight prep (DevOps Engineer, COM-23)
+
+**Branch merged:** `feat/m4-pre-flight-prep` → `dev` (no-ff merge `b750d1c`, pushed to `origin/dev`).
+**Branch tip SHA:** `4c3907c`.
+**Tracking issue:** [COM-23](/COM/issues/COM-23) (DevOps); sibling orchestration [COM-22](/COM/issues/COM-22) (CTO); parent [COM-21](/COM/issues/COM-21) (M4 tracking).
+
+**Deliverables (at SHA `4c3907c`):**
+- `infra/deploy-runbook.md` — added "Local Pre-Flight Checks" section (WORKER_PORT 3001/3010 collision gotcha, M3 root scripts `pnpm db:seed`/`api:generate-spec`/`api:regenerate`, native dev smoke sequence). Step 1.4 documents `pnpm db:seed` root alias. Step 2.4 adds `/v1/openapi.json` verification curl. Step 2.5 adds the worker health curl command.
+- `infra/env-manifest.md` — added "GitHub Actions Secrets (CI/CD)" section documenting all six `${{ secrets.* }}` references in `.github/workflows/deploy.yml` (`RAILWAY_TOKEN`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_OPS_PROJECT_ID`, `VERCEL_TECH_PROJECT_ID`, `VERCEL_CUSTOMER_PROJECT_ID`) with `Set in: GitHub Actions secrets` annotation. Zero undocumented secrets remain.
+- `.env.example` — `WORKER_PORT=3010` with collision comment; `SUPABASE_JWT_SECRET` and `CORS_ORIGINS` added (were in manifest but missing from example).
+- `docker-compose.yml` — worker service now exposes `ports: ['3001:3001']` with `WORKER_PORT=3001` inside the container so `/v1/health` is reachable from host during local boot smoke.
+- `apps/worker/src/main.ts` default unchanged (production canonical `WORKER_PORT=3001` per env-manifest.md and railway.toml — collision is local-dev only).
+
+**Type C verification (CTO, 2026-05-21):**
+- `git log --oneline origin/dev..4c3907c`: 2 commits (`114ec0a` chore + `4c3907c` runbook Step 2.5 curl fix-up), both carry the `Co-Authored-By: Paperclip` footer.
+- `git diff --stat` from fork base `4ed0637`: 4 files / 109 insertions / 4 deletions — only the four expected pre-flight paths.
+- Slice-boundary: no source code changed except `docker-compose.yml` worker port config; `apps/api/src/**`, `apps/worker/src/**`, `packages/**` source untouched.
+- Cross-check item 3 — `grep -oE 'secrets\.[A-Z_]+' .github/workflows/deploy.yml | sort -u` returns exactly the six secrets now documented in env-manifest.md. Zero drift.
+- End-to-end reads of `.env.example`, `docker-compose.yml`, `infra/deploy-runbook.md` (Local Pre-Flight Checks + Steps 1.4/2.4/2.5), `infra/env-manifest.md` (GH Actions Secrets table): coherent, accurate, founder-actionable.
+- AI-free: zero `@anthropic-ai/sdk` / `openai` / `claude-sdk` references in `pnpm-lock.yaml` (no lockfile changes in this branch).
+- CI on branch tip: GitHub Actions run #31 **completed / success** — https://github.com/m-jamileh/commfit/actions/runs/26199618122.
+- Static checks reported by DevOps Engineer at SHA `4c3907c`: `pnpm lint` 8/8, `pnpm typecheck` clean across all packages, `pnpm test` 11/11 (api jest 5/5), `pnpm build` 9/9 force-run no-cache.
+- 3-way merge into `dev` as `b750d1c` (preserves COM-20 `tech-availability-row.tsx` already on dev) and pushed to `origin/dev`.
+- Docker image boot was explicitly deferred to founder/CI (Docker not available in the agent sandbox). Dockerfile structure (multi-stage builds, EXPOSE 3000/3001, CMD targets) reviewed manually by DevOps and confirmed correct. The live CI build of these images is the actual runtime path; the founder will run `docker compose up` as part of the M4 deploy-runbook smoke.
+
+**Docker correctness follow-up (CEO Type C, 2026-05-21, dev tip `2f09aa6`):**
+- `a92d9c8` (`fix(docker)`) was on `feat/m4-pre-flight-prep` after the CTO merge at `b750d1c`; reviewed and merged into `dev`.
+- Three correctness fixes: (1) removed `COPY packages/api-client/dist` from both runner stages — api-client is not built by the builder stage, so the COPY would fail on a clean checkout; (2) added `pnpm-lock.yaml` to the deps stage COPY for `--frozen-lockfile` reproducibility; (3) added `.dockerignore` (excludes node_modules, .next, .git, dist) to speed builds and prevent local artefacts contaminating the image.
+- `infra/env-manifest.md` note 5 updated with `WORKER_PORT=3010` collision reminder. No source code touched.
+- Rebased cleanly onto `origin/dev` and pushed as `2f09aa6`.
+
+### M4 deploy (Founder-led, outstanding)
+
+**Deliverables (founder runs `infra/deploy-runbook.md`):**
 - Supabase project created and migrated; seed data loaded.
 - Railway project created with API + worker + Redis deployed.
 - Three Vercel projects created and deployed (ops, tech, customer).
@@ -349,7 +382,7 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - The demo flows (a PM visit, an SR ticket, a quote, an invoice, a sign-off) work end-to-end in the deployed environment.
 - Founder personally verifies and updates this file to M4 → `done`.
 
-**Dependencies:** M3 must be `done`.
+**Dependencies:** M3 must be `done`. ✓ (Approved 2026-05-20.)
 
 **Note:** M4 is founder-driven. The CTO is available to answer questions and help diagnose deploy issues but does not execute the deploy. The founder runs the playbook in `infra/deploy-runbook.md`.
 
