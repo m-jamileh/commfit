@@ -90,6 +90,26 @@ export class JobsService {
     const currentJob = await this.prisma.job.findUnique({ where: { id } });
     const statusChanging = dto.status !== undefined && dto.status !== currentJob?.status;
 
+    // Shallow merge metadata so partial PATCH requests are non-destructive.
+    // equipmentDone is deep-merged one level so individual equipment can be
+    // marked done without overwriting sibling entries (COM-49).
+    let mergedMetadata: Record<string, unknown> | undefined;
+    if (dto.metadata !== undefined) {
+      const existing = (currentJob?.metadata ?? {}) as Record<string, unknown>;
+      const incoming = dto.metadata as Record<string, unknown>;
+      mergedMetadata = { ...existing, ...incoming };
+      if (
+        incoming.equipmentDone !== undefined &&
+        typeof existing.equipmentDone === 'object' &&
+        existing.equipmentDone !== null
+      ) {
+        mergedMetadata.equipmentDone = {
+          ...(existing.equipmentDone as Record<string, unknown>),
+          ...(incoming.equipmentDone as Record<string, unknown>),
+        };
+      }
+    }
+
     const job = await this.prisma.job.update({
       where: { id },
       data: {
@@ -101,7 +121,7 @@ export class JobsService {
         ...(dto.customerNotes !== undefined && { customerNotes: dto.customerNotes }),
         ...(dto.warrantyClaim !== undefined && { warrantyClaim: dto.warrantyClaim }),
         ...(dto.warrantySupplier !== undefined && { warrantySupplier: dto.warrantySupplier }),
-        ...(dto.metadata !== undefined && { metadata: dto.metadata as object }),
+        ...(mergedMetadata !== undefined && { metadata: mergedMetadata as object }),
         ...(statusChanging && { statusChangedAt: new Date() }),
       },
     });
@@ -208,6 +228,9 @@ export class JobsService {
     return this.mapToDto(job);
   }
 
+  // Accepts plain URLs or base64 data-URLs (data:image/jpeg;base64,...).
+  // Data-URLs are stored directly in job_photo.url (Postgres text column).
+  // Supabase Storage migration is deferred to M5 (see ADR-008).
   async addPhoto(
     jobId: string,
     data: {
