@@ -228,9 +228,6 @@ export class JobsService {
     return this.mapToDto(job);
   }
 
-  // Accepts plain URLs or base64 data-URLs (data:image/jpeg;base64,...).
-  // Data-URLs are stored directly in job_photo.url (Postgres text column).
-  // Supabase Storage migration is deferred to M5 (see ADR-008).
   async addPhoto(
     jobId: string,
     data: {
