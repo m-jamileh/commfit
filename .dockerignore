@@ -1,0 +1,21 @@
+.git
+.turbo
+.github
+
+# Build artefacts — recreated inside the image by the builder stage
+dist
+.next
+coverage
+
+# Local env files — secrets never enter the image
+.env
+.env.*
+*.env.local
+
+# pnpm store is mounted as a build-cache; never in the image
+node_modules
+
+# Logs and editor noise
+*.log
+*.swp
+.DS_Store

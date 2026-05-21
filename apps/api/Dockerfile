@@ -9,7 +9,7 @@ WORKDIR /app
 # ---- deps ----
 FROM base AS deps
 # Copy manifests for dependency install (layer cache)
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/config/package.json ./packages/config/
 COPY packages/db/package.json ./packages/db/
 COPY packages/shared-types/package.json ./packages/shared-types/
@@ -43,8 +43,6 @@ COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/package.json
 COPY --from=builder /app/packages/utils/dist ./packages/utils/dist
 COPY --from=builder /app/packages/utils/package.json ./packages/utils/package.json
-COPY --from=builder /app/packages/api-client/dist ./packages/api-client/dist
-COPY --from=builder /app/packages/api-client/package.json ./packages/api-client/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
