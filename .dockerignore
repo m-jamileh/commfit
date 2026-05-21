@@ -6,6 +6,7 @@
 dist
 .next
 coverage
+packages/db/generated
 
 # Local env files — secrets never enter the image
 .env
