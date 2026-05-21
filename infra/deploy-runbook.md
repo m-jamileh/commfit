@@ -6,6 +6,29 @@ Estimated time: 2–3 hours for a first deployment.
 
 ---
 
+## Placeholder Substitution Table
+
+As you work through the steps, capture the values below in a scratch file or notes app. Commands throughout this runbook reference these placeholders — substitute your actual values wherever you see `<PLACEHOLDER>`.
+
+| Placeholder | Captured after | Example |
+|---|---|---|
+| `<API_URL>` | Step 2.3 (Railway API deploy completes) | `https://api-production-9f18c.up.railway.app` |
+| `<WORKER_URL>` | Step 2.5 (Railway Worker deploy completes) | `https://worker-production-9d2c.up.railway.app` |
+| `<SUPABASE_URL>` | Step 1.2 | `https://<project-ref>.supabase.co` |
+| `<SUPABASE_ANON_KEY>` | Step 1.2 | `eyJhbGci...` |
+| `<SUPABASE_SERVICE_ROLE_KEY>` | Step 1.2 | `eyJhbGci...` |
+| `<SUPABASE_JWT_SECRET>` | Step 1.2 | `<jwt-secret>` |
+| `<DATABASE_URL>` | Step 1.2 | `postgresql://postgres.<ref>:<pw>@aws-0-us-east-1.pooler.supabase.com:6543/postgres` |
+| `<REDIS_URL>` | Step 2.2 (Railway Redis add-on) | `redis://default:<pw>@<host>.railway.internal:<port>` |
+| `<SENTRY_DSN_API>` | Step 5.1 | `https://...@sentry.io/...` |
+| `<SENTRY_DSN_WORKER>` | Step 5.1 | `https://...@sentry.io/...` |
+| `<SENTRY_DSN_OPS>` | Step 5.1 | `https://...@sentry.io/...` |
+| `<SENTRY_DSN_TECH>` | Step 5.1 | `https://...@sentry.io/...` |
+| `<SENTRY_DSN_CUSTOMER>` | Step 5.1 | `https://...@sentry.io/...` |
+| `<SENTRY_AUTH_TOKEN>` | Step 5.2 | `sntrys_...` |
+
+---
+
 ## Prerequisites
 
 You need accounts and CLI tools in place before starting.
@@ -221,7 +244,7 @@ SENTRY_TRACES_SAMPLE_RATE = 0.1
 ```
 
 5. Click **Deploy**. Watch the build logs — the first build may take 3–5 minutes.
-6. Once deployed, note the Railway-assigned public URL (e.g. `https://commfit-api.up.railway.app`). You will use this as `NEXT_PUBLIC_API_URL` in the Vercel apps.
+6. Once deployed, note the Railway-assigned public URL. Save it as `<API_URL>` in your substitution table — you will use it as `NEXT_PUBLIC_API_URL` in the Vercel apps.
 
 ### 2.4 Verify API Health
 
@@ -229,11 +252,11 @@ SENTRY_TRACES_SAMPLE_RATE = 0.1
 > Railway probes the public service interface, not loopback. Both `apps/api/src/main.ts` and `apps/worker/src/main.ts` must call `app.listen(port, '0.0.0.0')`. Using the single-argument form `app.listen(port)` causes the app to bind to `127.0.0.1` on some Nest versions, which makes Railway's healthcheck fail with "service unavailable" even though the process is running. This is already set correctly in the codebase — do not remove the second argument when editing `main.ts`.
 
 ```bash
-curl https://commfit-api.up.railway.app/v1/health
+curl <API_URL>/v1/health
 # Expected: {"status":"ok","timestamp":"..."}
 
 # The raw OpenAPI JSON is also available (M3 addition):
-curl https://commfit-api.up.railway.app/v1/openapi.json | head -20
+curl <API_URL>/v1/openapi.json | head -20
 # Expected: {"openapi":"3.0.0","info":{"title":"Comm-Fit API", ...}}
 ```
 
@@ -254,10 +277,10 @@ REDIS_URL    = <same as API>
 SENTRY_DSN   = <from Step 5 — add after Sentry is set up>
 ```
 
-5. Click **Deploy** and verify the health endpoint after the build completes:
+5. Click **Deploy** and verify the health endpoint after the build completes. Save the Railway-assigned URL as `<WORKER_URL>` in your substitution table.
 
 ```bash
-curl https://commfit-worker.up.railway.app/v1/health
+curl <WORKER_URL>/v1/health
 # Expected: {"status":"ok","timestamp":"..."}
 ```
 
@@ -275,18 +298,30 @@ For GitHub Actions to trigger deploys, you need a Railway API token:
 
 You will create three Vercel projects, one per frontend app.
 
-### 3.1 Create the Vercel Team Secrets
+### 3.1 Env-var Strategy (Hobby Tier)
 
-These shared secrets are referenced by all three `vercel.*.json` files. Create them once in Vercel → your team → **Settings → Environment Variables**.
+> **Shared Env Vars are only available on Vercel Pro+.** Comm-Fit is on Hobby, so each project's environment variables must be configured independently — 7 variables × 3 projects = **21 individual additions**. There are no team-level shared secrets on Hobby.
 
+> **`vercel secrets add` is deprecated** in Vercel CLI v33+ and removed in v54.2.0. Do not use it. Configure env vars via the Dashboard or `vercel env add` instead.
+
+For each project you can use either flow:
+
+**Dashboard flow (recommended for first-time setup):**
+1. Open the Vercel Dashboard → select your project → **Settings → Environment Variables**.
+2. For each variable listed in 3.2 / 3.3 / 3.4 below, click **Add** and set:
+   - **Name:** the variable name (e.g. `NEXT_PUBLIC_API_URL`)
+   - **Value:** the actual value (substitute placeholders from your Substitution Table)
+   - **Environment:** tick **Production** (and **Preview** if desired)
+3. Click **Save**.
+4. Redeploy the project for the new vars to take effect.
+
+**CLI flow (alternative):**
 ```bash
-vercel secrets add commfit-supabase-url      "<SUPABASE_URL>"
-vercel secrets add commfit-supabase-anon-key "<SUPABASE_ANON_KEY>"
-vercel secrets add commfit-sentry-org        "<your-sentry-org-slug>"
-vercel secrets add commfit-sentry-auth-token "<SENTRY_AUTH_TOKEN from Step 5>"
+cd apps/<app>
+vercel link --project commfit-<app>
+# Then for each variable (runs interactively):
+vercel env add <NAME> production
 ```
-
-> Note: Vercel secret names in `vercel.*.json` are referenced as `@commfit-supabase-url` etc. The `vercel secrets add` command strips the leading `@`.
 
 ### 3.2 Create the Ops App
 
@@ -298,24 +333,19 @@ vercel secrets add commfit-sentry-auth-token "<SENTRY_AUTH_TOKEN from Step 5>"
 6. Override Build Command: `pnpm --filter @commfit/ops build`
 7. Override Output Directory: `apps/ops/.next`
 8. Override Install Command: `pnpm install --no-frozen-lockfile`
-9. Add environment variables (Environment Variables tab):
+9. After the project is created, add the following 7 environment variables for **Production** (using Dashboard or CLI per Section 3.1):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL      = @commfit-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY = @commfit-supabase-anon-key
-NEXT_PUBLIC_API_URL           = https://commfit-api.up.railway.app
-NEXT_PUBLIC_SENTRY_DSN        = @commfit-ops-sentry-dsn
-SENTRY_DSN                    = @commfit-ops-sentry-dsn
-SENTRY_ORG                    = @commfit-sentry-org
-SENTRY_AUTH_TOKEN             = @commfit-sentry-auth-token
+NEXT_PUBLIC_SUPABASE_URL      = <SUPABASE_URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY = <SUPABASE_ANON_KEY>
+NEXT_PUBLIC_API_URL           = <API_URL>
+NEXT_PUBLIC_SENTRY_DSN        = <SENTRY_DSN_OPS>
+SENTRY_DSN                    = <SENTRY_DSN_OPS>
+SENTRY_ORG                    = <your-sentry-org-slug>
+SENTRY_AUTH_TOKEN             = <SENTRY_AUTH_TOKEN>
 ```
 
-Add the ops-specific secret:
-
-```bash
-vercel secrets add commfit-ops-sentry-dsn  "<ops Sentry DSN from Step 5>"
-vercel secrets add commfit-ops-api-url     "https://commfit-api.up.railway.app"
-```
+> `<SENTRY_DSN_OPS>` and `<SENTRY_AUTH_TOKEN>` are collected in Step 5. Add them to the project after completing Step 5 and before the first production build.
 
 10. Click **Deploy**. Note the project ID from the URL: `https://vercel.com/<org>/<project-name>/settings` → copy the Project ID. Add it to GitHub Secrets as `VERCEL_OPS_PROJECT_ID`.
 
@@ -327,9 +357,16 @@ Repeat Step 3.2 for the Tech app:
 - Build command: `pnpm --filter @commfit/tech build`
 - Output directory: `apps/tech/.next`
 
-```bash
-vercel secrets add commfit-tech-sentry-dsn  "<tech Sentry DSN from Step 5>"
-vercel secrets add commfit-tech-api-url     "https://commfit-api.up.railway.app"
+Add the following 7 environment variables for **Production**:
+
+```
+NEXT_PUBLIC_SUPABASE_URL      = <SUPABASE_URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY = <SUPABASE_ANON_KEY>
+NEXT_PUBLIC_API_URL           = <API_URL>
+NEXT_PUBLIC_SENTRY_DSN        = <SENTRY_DSN_TECH>
+SENTRY_DSN                    = <SENTRY_DSN_TECH>
+SENTRY_ORG                    = <your-sentry-org-slug>
+SENTRY_AUTH_TOKEN             = <SENTRY_AUTH_TOKEN>
 ```
 
 Add `VERCEL_TECH_PROJECT_ID` to GitHub Secrets.
@@ -342,9 +379,16 @@ Repeat Step 3.2 for the Customer app:
 - Build command: `pnpm --filter @commfit/customer build`
 - Output directory: `apps/customer/.next`
 
-```bash
-vercel secrets add commfit-customer-sentry-dsn  "<customer Sentry DSN from Step 5>"
-vercel secrets add commfit-customer-api-url      "https://commfit-api.up.railway.app"
+Add the following 7 environment variables for **Production**:
+
+```
+NEXT_PUBLIC_SUPABASE_URL      = <SUPABASE_URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY = <SUPABASE_ANON_KEY>
+NEXT_PUBLIC_API_URL           = <API_URL>
+NEXT_PUBLIC_SENTRY_DSN        = <SENTRY_DSN_CUSTOMER>
+SENTRY_DSN                    = <SENTRY_DSN_CUSTOMER>
+SENTRY_ORG                    = <your-sentry-org-slug>
+SENTRY_AUTH_TOKEN             = <SENTRY_AUTH_TOKEN>
 ```
 
 Add `VERCEL_CUSTOMER_PROJECT_ID` to GitHub Secrets.
@@ -396,19 +440,19 @@ Create five Sentry projects — one per service.
 
 ### 5.3 Distribute DSNs
 
-Go back and add the DSNs to the services:
+Go back and add the DSNs to the services. Record each DSN in your Substitution Table using the `<SENTRY_DSN_*>` placeholder names.
 
-- Railway API service: add `SENTRY_DSN = <commfit-api DSN>`
-- Railway Worker service: add `SENTRY_DSN = <commfit-worker DSN>`
-- Vercel ops secrets: `commfit-ops-sentry-dsn = <commfit-ops DSN>`
-- Vercel tech secrets: `commfit-tech-sentry-dsn = <commfit-tech DSN>`
-- Vercel customer secrets: `commfit-customer-sentry-dsn = <commfit-customer DSN>`
+**Railway services (Variables tab for each service):**
+- API service: add `SENTRY_DSN = <SENTRY_DSN_API>`
+- Worker service: add `SENTRY_DSN = <SENTRY_DSN_WORKER>`
 
-Also add `SENTRY_AUTH_TOKEN` to the Vercel team secrets:
+**Vercel apps (Dashboard or CLI per Section 3.1 — per-project, not shared):**
+- `commfit-ops`: add/update `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` to `<SENTRY_DSN_OPS>`
+- `commfit-tech`: add/update `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` to `<SENTRY_DSN_TECH>`
+- `commfit-customer`: add/update `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` to `<SENTRY_DSN_CUSTOMER>`
+- Each project: add/update `SENTRY_AUTH_TOKEN` to `<SENTRY_AUTH_TOKEN>`
 
-```bash
-vercel secrets add commfit-sentry-auth-token "<sentry auth token>"
-```
+> If you set up the Vercel projects in Step 3 before completing Step 5, go back to each project's Settings → Environment Variables now and fill in the `SENTRY_DSN` and `SENTRY_AUTH_TOKEN` values.
 
 ---
 
@@ -475,7 +519,7 @@ Verify each app loads without errors:
 - [ ] Open `https://commfit-ops.vercel.app` — Ops app loads, no console errors.
 - [ ] Open `https://commfit-tech.vercel.app` — Tech app loads, no console errors.
 - [ ] Open `https://commfit-customer.vercel.app` — Customer portal loads, no console errors.
-- [ ] `curl https://commfit-api.up.railway.app/v1/health` returns `{"status":"ok"}`.
+- [ ] `curl <API_URL>/v1/health` returns `{"status":"ok"}`.
 
 ### 7.2 Login Tests
 
@@ -538,10 +582,10 @@ For each app, log in with the seeded demo credentials:
 - Confirm `DATABASE_URL` is set correctly and the Supabase instance is accessible.
 - Confirm `REDIS_URL` is set and the Railway Redis instance is running.
 
-### Vercel deploy fails: `secret not found`
+### Vercel deploy fails: missing environment variable
 
-- Confirm all Vercel secrets referenced in `vercel.*.json` have been created with `vercel secrets add`.
-- Secret names in the JSON use `@` prefix; the CLI command omits the `@`.
+- `vercel.*.json` files no longer carry an `env` block — env vars are configured per-project in the Vercel Dashboard or via `vercel env add`. If a build fails due to a missing variable, go to Dashboard → Project → Settings → Environment Variables and verify all 7 vars from Section 3.2 / 3.3 / 3.4 are present and set to non-empty values for the Production environment.
+- If you see a reference to an `@commfit-*` secret in an old build log, that run was triggered before this fix was merged. Trigger a new deployment after the env vars are set.
 
 ### Sentry errors not appearing
 
