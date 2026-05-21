@@ -1,5 +1,26 @@
 "use client";
-import { PageHeader, Card, Pill, StatusDot, UserAvatar, Button, useTechnicians } from "@commfit/ui";
+import { useState } from "react";
+import {
+  PageHeader,
+  Card,
+  Pill,
+  StatusDot,
+  UserAvatar,
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalFooter,
+  useTechnicians,
+  useCreateTechnician,
+} from "@commfit/ui";
 import type { TechAvailabilityStatus } from "@commfit/shared-types";
 
 const statusDotColor: Record<TechAvailabilityStatus, "success" | "warning" | "default"> = {
@@ -10,13 +31,39 @@ const statusDotColor: Record<TechAvailabilityStatus, "success" | "warning" | "de
 
 export default function TechniciansPage() {
   const { data: techs = [], isLoading } = useTechnicians();
+  const createTech = useCreateTechnician();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newFirst, setNewFirst] = useState("");
+  const [newLast, setNewLast] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newTechType, setNewTechType] = useState("in_house");
+  const [newRegion, setNewRegion] = useState("");
+
+  function handleCreate() {
+    if (!newFirst || !newLast || !newEmail) return;
+    createTech.mutate(
+      { firstName: newFirst, lastName: newLast, email: newEmail, phone: newPhone || undefined, techType: newTechType, region: newRegion },
+      {
+        onSuccess: () => {
+          setShowCreate(false);
+          setNewFirst(""); setNewLast(""); setNewEmail(""); setNewPhone(""); setNewTechType("in_house"); setNewRegion("");
+        },
+      }
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Technicians"
         breadcrumbs={[{ label: "Workforce" }, { label: "Technicians" }]}
-        actions={<Button variant="primary" size="sm">+ Add Technician</Button>}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+            + Add Technician
+          </Button>
+        }
       />
       <div className="grid grid-cols-1 gap-3">
         {isLoading ? (
@@ -56,6 +103,38 @@ export default function TechniciansPage() {
           </Card>
         ))}
       </div>
+
+      <Modal open={showCreate} onOpenChange={setShowCreate}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Add Technician</ModalTitle>
+          </ModalHeader>
+          <div className="space-y-3 mt-2">
+            <div className="flex gap-3">
+              <Input label="First Name *" value={newFirst} onChange={(e) => setNewFirst(e.target.value)} className="flex-1" />
+              <Input label="Last Name *" value={newLast} onChange={(e) => setNewLast(e.target.value)} className="flex-1" />
+            </div>
+            <Input label="Email *" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+            <Input label="Phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+            <Select value={newTechType} onValueChange={setNewTechType}>
+              <SelectTrigger label="Type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in_house">In-House</SelectItem>
+                <SelectItem value="third_party">3rd Party</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input label="Region" value={newRegion} onChange={(e) => setNewRegion(e.target.value)} />
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={createTech.isPending}>
+              {createTech.isPending ? "Adding..." : "Add Technician"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
