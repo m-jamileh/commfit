@@ -1,8 +1,6 @@
 # ---- base ----
 FROM node:22-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN npm install -g pnpm@9.15.4
 
 WORKDIR /app
 
@@ -28,9 +26,7 @@ RUN pnpm --filter @commfit/worker build
 # ---- runner ----
 FROM node:22-alpine AS runner
 ENV NODE_ENV=production
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN npm install -g pnpm@9.15.4
 
 WORKDIR /app
 
