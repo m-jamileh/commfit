@@ -2,14 +2,14 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, ArrowLeft } from "lucide-react";
-import { Card, Button, Input, useJob, mockLocations, useUpdateJobStatus } from "@commfit/ui";
+import { Card, Button, Input, useJob, mockLocations, useCompleteJob } from "@commfit/ui";
 
 export default function SignOffPage() {
   const params = useParams();
   const router = useRouter();
   const jobId = typeof params.id === "string" ? params.id : "";
   const { data: job, isLoading } = useJob(jobId);
-  const updateStatus = useUpdateJobStatus();
+  const completeJob = useCompleteJob();
 
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -21,7 +21,11 @@ export default function SignOffPage() {
 
   async function handleConfirm() {
     if (!customerName) return;
-    await updateStatus.mutateAsync({ id: jobId, status: "completed" });
+    await completeJob.mutateAsync({
+      id: jobId,
+      signerName: customerName,
+      signerEmail: customerEmail,
+    });
     setCompleted(true);
   }
 
@@ -123,10 +127,10 @@ export default function SignOffPage() {
           variant="primary"
           size="lg"
           className="w-full"
-          disabled={!customerName || !signed || updateStatus.isPending}
+          disabled={!customerName || !signed || completeJob.isPending}
           onClick={handleConfirm}
         >
-          {updateStatus.isPending ? "Confirming..." : "Confirm Sign-Off & Complete Job"}
+          {completeJob.isPending ? "Confirming..." : "Confirm Sign-Off & Complete Job"}
         </Button>
       </div>
     </div>
