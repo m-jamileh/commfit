@@ -3,7 +3,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@commfit/ui'],
+  transpilePackages: ['@commfit/ui', '@commfit/shared-types'],
 };
 
 export default withSentryConfig(nextConfig, {
