@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { SwRegister } from "./sw-register";
-import { CommFitQueryProvider } from "@commfit/ui";
+import { TechProviders } from "./tech-providers";
 
 export const metadata: Metadata = {
   title: "Comm-Fit Field",
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="bg-bg font-sans text-text-primary antialiased">
-        <CommFitQueryProvider>
+        <TechProviders>
           <SwRegister />
           <div className="flex flex-col min-h-screen max-w-md mx-auto">
             {/* Content */}
@@ -53,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </nav>
           </div>
-        </CommFitQueryProvider>
+        </TechProviders>
       </body>
     </html>
   );

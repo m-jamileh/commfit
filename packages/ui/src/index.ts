@@ -4,6 +4,9 @@ export * from "./lib/utils";
 export * from "./lib/auth";
 export * from "./lib/mock-data";
 export { CommFitQueryProvider } from "./lib/query-client";
+export { CommfitClientProvider, useCommfitClient } from "./lib/commfit-client";
+export { createCommfitClient, CommfitApiError } from "@commfit/api-client";
+export type { CommfitClient, CommfitClientOptions, ApiError } from "@commfit/api-client";
 export { createClient } from "./lib/supabase";
 
 // Primitive components
@@ -53,3 +56,4 @@ export * from "./hooks/use-quotes";
 export * from "./hooks/use-parts";
 export * from "./hooks/use-reports";
 export * from "./hooks/use-commission";
+export * from "./hooks/use-webhooks";

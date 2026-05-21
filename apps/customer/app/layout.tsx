@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { CommFitQueryProvider } from "@commfit/ui";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Comm-Fit Customer Portal",
@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="bg-bg font-sans text-text-primary antialiased min-h-screen">
-        <CommFitQueryProvider>
+        <Providers>
           {/* Top navigation */}
           <header className="bg-surface border-b border-border sticky top-0 z-10">
             <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-6">
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="max-w-6xl mx-auto px-4 py-6">
             {children}
           </main>
-        </CommFitQueryProvider>
+        </Providers>
       </body>
     </html>
   );
