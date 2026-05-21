@@ -12,6 +12,7 @@ import {
   useUpdateJob,
   useAddJobPhoto,
   useParts,
+  uploadJobPhoto,
   mockLocations,
 } from "@commfit/ui";
 
@@ -25,8 +26,6 @@ const PRE_SERVICE_CHECKS = [
 interface StoredPhoto {
   url: string;
   equipmentId?: string;
-  caption?: string;
-  addedAt: string;
 }
 
 interface StoredPart {
@@ -49,6 +48,9 @@ export default function JobDetailPage() {
 
   const [checks, setChecks] = useState<Record<number, boolean>>({});
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [uploadingEquipmentId, setUploadingEquipmentId] = useState<string | null>(null);
+  // Local photos for immediate thumbnail display while query refetches
+  const [localPhotos, setLocalPhotos] = useState<StoredPhoto[]>([]);
   const seededChecks = useRef(false);
 
   const locMap = new Map(mockLocations.map((l) => [l.id, l]));
@@ -69,7 +71,13 @@ export default function JobDetailPage() {
     }
   }, [job]);
 
-  const allPhotos = (job?.metadata?.photos as StoredPhoto[] | undefined) ?? [];
+  const persistedPhotos = (job?.metadata?.photos as StoredPhoto[] | undefined) ?? [];
+  // Merge persisted + local, dedup by url
+  const allPhotos = [
+    ...persistedPhotos,
+    ...localPhotos.filter((lp) => !persistedPhotos.some((pp) => pp.url === lp.url)),
+  ];
+
   const partsUsed = (job?.metadata?.parts as StoredPart[] | undefined) ?? [];
   const partsMap = new Map(allParts.map((p) => [p.id, p]));
   const equipmentDone = (
@@ -92,7 +100,7 @@ export default function JobDetailPage() {
     });
   }
 
-  function handlePhotoUpload(
+  async function handlePhotoUpload(
     e: React.ChangeEvent<HTMLInputElement>,
     equipmentId: string
   ) {
@@ -104,12 +112,20 @@ export default function JobDetailPage() {
       return;
     }
     setPhotoError(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      addPhoto.mutate({ id: jobId, url: reader.result as string, equipmentId });
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+    setUploadingEquipmentId(equipmentId);
+    try {
+      const { url } = await uploadJobPhoto(file, {
+        jobId,
+        accountId: job!.accountId,
+      });
+      setLocalPhotos((prev) => [...prev, { url, equipmentId }]);
+      await addPhoto.mutateAsync({ id: jobId, url, equipmentId });
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Photo upload failed");
+    } finally {
+      setUploadingEquipmentId(null);
+      e.target.value = "";
+    }
   }
 
   function handleMarkDone(equipmentId: string) {
@@ -227,6 +243,7 @@ export default function JobDetailPage() {
           <div className="space-y-2">
             {equipmentList.slice(0, 5).map((eq) => {
               const isDone = !!equipmentDone[eq.id];
+              const isUploading = uploadingEquipmentId === eq.id;
               const photosForEq = allPhotos.filter((p) => p.equipmentId === eq.id);
               return (
                 <Card key={eq.id} padding="sm">
@@ -255,11 +272,12 @@ export default function JobDetailPage() {
                         accept="image/*"
                         capture="environment"
                         className="sr-only"
+                        disabled={isUploading}
                         onChange={(e) => handlePhotoUpload(e, eq.id)}
                       />
                       <span className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-bg hover:bg-border/50 transition-colors">
                         <Camera className="h-3 w-3" />
-                        Photo{photosForEq.length > 0 ? ` (${photosForEq.length})` : ""}
+                        {isUploading ? "Uploading…" : `Photo${photosForEq.length > 0 ? ` (${photosForEq.length})` : ""}`}
                       </span>
                     </label>
                     <Button
