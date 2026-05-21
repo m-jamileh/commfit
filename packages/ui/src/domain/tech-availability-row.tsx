@@ -44,15 +44,19 @@ function TechAvailabilityRow({ tech, onClick, className }: TechAvailabilityRowPr
     >
       <UserAvatar name={tech.name} size="sm" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text-primary truncate">{tech.name}</p>
-        <p className="text-xs text-text-muted">{tech.region}</p>
-      </div>
-      <Pill color={tech.techType === "in_house" ? "primary" : "default"}>
-        {tech.techType === "in_house" ? "In-House" : "3rd Party"}
-      </Pill>
-      <div className="flex items-center gap-1">
-        <StatusDot color={statusDotColor[tech.availabilityStatus]} pulse={tech.availabilityStatus === "busy"} />
-        <span className="text-xs text-text-secondary">{statusLabel[tech.availabilityStatus]}</span>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium text-text-primary truncate flex-1 min-w-0">{tech.name}</p>
+          <Pill color={tech.techType === "in_house" ? "primary" : "default"} className="shrink-0">
+            {tech.techType === "in_house" ? "In-House" : "3rd Party"}
+          </Pill>
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <p className="text-xs text-text-muted truncate flex-1 min-w-0">{tech.region}</p>
+          <div className="flex items-center gap-1 shrink-0">
+            <StatusDot color={statusDotColor[tech.availabilityStatus]} pulse={tech.availabilityStatus === "busy"} />
+            <span className="text-xs text-text-secondary">{statusLabel[tech.availabilityStatus]}</span>
+          </div>
+        </div>
       </div>
       {tech.currentJobRef && (
         <span className="text-xs text-text-muted hidden lg:block truncate max-w-[100px]">
