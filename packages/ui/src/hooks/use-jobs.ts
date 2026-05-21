@@ -1,3 +1,4 @@
+"use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockJobs } from "../lib/mock-data";
 import type { JobStatus, JobType } from "@commfit/shared-types";

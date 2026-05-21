@@ -1,3 +1,4 @@
+"use client";
 import { useQuery } from "@tanstack/react-query";
 import { mockQuotes } from "../lib/mock-data";
 import type { QuoteStatus } from "@commfit/shared-types";

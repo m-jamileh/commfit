@@ -44,6 +44,7 @@ export default function TechLoginPage() {
             <Input
               label="Email"
               type="email"
+              name="email"
               placeholder="you@tech.commfit.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -52,6 +53,7 @@ export default function TechLoginPage() {
             <Input
               label="Password"
               type="password"
+              name="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
