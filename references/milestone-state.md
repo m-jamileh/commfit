@@ -1,6 +1,6 @@
 # Milestone State
 
-Last updated: 2026-05-21 (M1 done / M2 done / M3 done / M4 in_progress — pre-flight prep merged, founder-led deploy outstanding)
+Last updated: 2026-05-21 (M1 done / M2 done / M3 done / M4 in_progress — pre-flight prep merged, deploy fix #6 merged at `8e81327`, founder-led deploy outstanding)
 
 ## M1 — Architecture & Contracts
 **Owner:** Principal Architect
@@ -365,6 +365,17 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - Three correctness fixes: (1) removed `COPY packages/api-client/dist` from both runner stages — api-client is not built by the builder stage, so the COPY would fail on a clean checkout; (2) added `pnpm-lock.yaml` to the deps stage COPY for `--frozen-lockfile` reproducibility; (3) added `.dockerignore` (excludes node_modules, .next, .git, dist) to speed builds and prevent local artefacts contaminating the image.
 - `infra/env-manifest.md` note 5 updated with `WORKER_PORT=3010` collision reminder. No source code touched.
 - Rebased cleanly onto `origin/dev` and pushed as `2f09aa6`.
+
+**Deploy fix #6 — Prisma linux-musl (OpenSSL 1.1) engine still loaded on Alpine (CTO Type C, 2026-05-21, dev tip `8e81327`):**
+- `5c58b56` (`fix(docker)`) by DevOps Engineer on `feat/m4-deploy-fix-prisma-generate`: applies a four-part fix symmetrically to `apps/api/Dockerfile` and `apps/worker/Dockerfile` plus a `.dockerignore` defence-in-depth line. 3 files changed, 11 insertions / 4 deletions.
+- Root cause: even with `binaryTargets = ["native", "linux-musl-openssl-3.0.x"]` from fix #5, `prisma generate` on Alpine produced **both** engines and the runtime loader picked `linux-musl.so.node` (OpenSSL 1.1) first; that binary needs `libssl.so.1.1` which Alpine 3.20+ dropped, so the api container crash-looped at Prisma init.
+- Four-part fix per Dockerfile: (1) `PRISMA_GENERATE_SKIP_AUTOINSTALL=true` on deps-stage `pnpm install` to prevent a stale `linux-musl` engine being cached before the schema is present; (2) `rm -rf /root/.cache/prisma /root/.cache/prisma-engines` before `prisma generate` in the builder so the declared binaryTargets are re-fetched fresh; (3) explicit `rm -f packages/db/generated/client/libquery_engine-linux-musl.so.node` immediately after `prisma generate` so only the OpenSSL-3 engine survives into the runner; (4) `apk add --no-cache openssl` in the runner stage so the runtime platform detector can confirm OpenSSL 3.x. `.dockerignore` adds `packages/db/generated` to keep any locally-generated artefacts out of the build context.
+- Slice-boundary: only the two Dockerfiles + `.dockerignore`. No source code, env vars, lockfile, or other infra changed.
+- AI-free: zero lockfile changes; `@anthropic-ai/sdk`/`openai` not introduced.
+- End-to-end read of both Dockerfiles on `origin/feat/m4-deploy-fix-prisma-generate@5c58b56` confirms symmetric four-part fix; commit message accurately describes the change.
+- Docker image build was explicitly deferred to founder/Railway by the issue scope (CTO Type C is git-level verification + artefact read; the Railway CI build is the actual runtime path).
+- Merged to `dev` as `8e81327` (no-ff merge, CTO author) and pushed to `origin/dev`.
+- Tracking issue: [COM-35](/COM/issues/COM-35).
 
 **Deploy fix #4 — missing `packages/db/package.json` COPY (CTO Type C, 2026-05-21, dev tip `ccd97ea`):**
 - `3662cec` (`fix(docker)`) by DevOps Engineer on `feat/m4-deploy-fix-db-package-copy`: adds `COPY --from=builder /app/packages/db/package.json ./packages/db/package.json` to the runner stage of both `apps/api/Dockerfile` and `apps/worker/Dockerfile`, immediately after the existing `packages/db/generated` COPY. One line per Dockerfile, 2 files changed, 2 insertions.
