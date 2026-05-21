@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "commfit-customer",
-  "buildCommand": "pnpm --filter @commfit/customer build",
+  "buildCommand": "pnpm exec turbo run build --filter=@commfit/customer",
   "outputDirectory": "apps/customer/.next",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
