@@ -251,7 +251,12 @@ REDIS_URL    = <same as API>
 SENTRY_DSN   = <from Step 5 — add after Sentry is set up>
 ```
 
-5. Click **Deploy** and verify the health endpoint after the build completes.
+5. Click **Deploy** and verify the health endpoint after the build completes:
+
+```bash
+curl https://commfit-worker.up.railway.app/v1/health
+# Expected: {"status":"ok","timestamp":"..."}
+```
 
 ### 2.6 Save the Railway Token
 
