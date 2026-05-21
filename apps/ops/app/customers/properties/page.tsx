@@ -1,12 +1,41 @@
 "use client";
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { PageHeader, Card, Pill, Button, useLocations, mockAccounts } from "@commfit/ui";
+import {
+  PageHeader,
+  Card,
+  Pill,
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalFooter,
+  useLocations,
+  useCreateLocation,
+  mockAccounts,
+} from "@commfit/ui";
 
 export default function PropertiesPage() {
   const [search, setSearch] = useState("");
   const { data: locations = [], isLoading } = useLocations();
+  const createLocation = useCreateLocation();
   const accountMap = new Map(mockAccounts.map((a) => [a.id, a]));
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newAccountId, setNewAccountId] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newState, setNewState] = useState("");
+  const [newZip, setNewZip] = useState("");
+  const [newContact, setNewContact] = useState("");
 
   const filtered = locations.filter((l) =>
     !search ||
@@ -14,12 +43,29 @@ export default function PropertiesPage() {
     l.city.toLowerCase().includes(search.toLowerCase())
   );
 
+  function handleCreate() {
+    if (!newName || !newAccountId || !newAddress || !newCity || !newState) return;
+    createLocation.mutate(
+      { name: newName, accountId: newAccountId, address: newAddress, city: newCity, state: newState, zip: newZip || undefined, contactName: newContact || undefined },
+      {
+        onSuccess: () => {
+          setShowCreate(false);
+          setNewName(""); setNewAccountId(""); setNewAddress(""); setNewCity(""); setNewState(""); setNewZip(""); setNewContact("");
+        },
+      }
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Properties"
         breadcrumbs={[{ label: "Customers" }, { label: "Properties" }]}
-        actions={<Button variant="primary" size="sm">+ New Property</Button>}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+            + New Property
+          </Button>
+        }
       />
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -65,6 +111,40 @@ export default function PropertiesPage() {
           </tbody>
         </table>
       </Card>
+
+      <Modal open={showCreate} onOpenChange={setShowCreate}>
+        <ModalContent size="lg">
+          <ModalHeader>
+            <ModalTitle>New Property</ModalTitle>
+          </ModalHeader>
+          <div className="space-y-3 mt-2">
+            <Input label="Property Name *" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Select value={newAccountId} onValueChange={setNewAccountId}>
+              <SelectTrigger label="Account *">
+                <SelectValue placeholder="Select account..." />
+              </SelectTrigger>
+              <SelectContent>
+                {mockAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input label="Address *" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
+            <div className="flex gap-3">
+              <Input label="City *" value={newCity} onChange={(e) => setNewCity(e.target.value)} className="flex-1" />
+              <Input label="State *" value={newState} onChange={(e) => setNewState(e.target.value)} className="w-20" />
+              <Input label="ZIP" value={newZip} onChange={(e) => setNewZip(e.target.value)} className="w-24" />
+            </div>
+            <Input label="Contact Name" value={newContact} onChange={(e) => setNewContact(e.target.value)} />
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={createLocation.isPending}>
+              {createLocation.isPending ? "Creating..." : "Create Property"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

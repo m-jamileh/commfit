@@ -1,6 +1,7 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockTechnicians } from "../lib/mock-data";
+import { useCommfitClient } from "../lib/commfit-client";
 import type { TechAvailabilityStatus, TechType } from "@commfit/shared-types";
 
 interface TechFilters {
@@ -32,5 +33,16 @@ export function useTechnician(id: string) {
       return mockTechnicians.find((t) => t.id === id) ?? null;
     },
     enabled: !!id,
+  });
+}
+
+export function useCreateTechnician() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) => client.technicians.create(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["technicians"] });
+    },
   });
 }

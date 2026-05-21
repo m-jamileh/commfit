@@ -20,8 +20,19 @@ import {
 import {
   Sidebar,
   CommFitQueryProvider,
+  CommfitClientProvider,
+  createCommfitClient,
   type SidebarSection,
 } from "@commfit/ui";
+
+const devClient = createCommfitClient({
+  getAuthHeaders: () => ({
+    "x-user-id": "dev-user-id",
+    "x-account-id": "dev-account-id",
+    "x-location-id": "dev-location-id",
+    "x-role": "admin",
+  }),
+});
 
 const NAV_SECTIONS: SidebarSection[] = [
   {
@@ -87,6 +98,7 @@ export function OpsShell({ children }: { children: React.ReactNode }) {
 
   return (
     <CommFitQueryProvider>
+      <CommfitClientProvider client={devClient}>
       <div className="flex h-screen overflow-hidden">
         <Sidebar
           sections={NAV_SECTIONS}
@@ -110,6 +122,7 @@ export function OpsShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+      </CommfitClientProvider>
     </CommFitQueryProvider>
   );
 }

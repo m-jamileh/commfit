@@ -6,6 +6,7 @@ import {
   Card,
   Pill,
   Button,
+  Input,
   Select,
   SelectTrigger,
   SelectContent,
@@ -16,7 +17,10 @@ import {
   ModalHeader,
   ModalTitle,
   ModalDescription,
+  ModalFooter,
   useJobs,
+  useCreateJob,
+  useUpdateJob,
   mockLocations,
   mockTechnicians,
 } from "@commfit/ui";
@@ -42,13 +46,29 @@ export default function JobsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   const { data: jobs = [], isLoading } = useJobs(
     statusFilter !== "all" ? { status: statusFilter as JobStatus } : undefined
   );
+  const createJob = useCreateJob();
+  const updateJob = useUpdateJob();
 
   const locationMap = new Map(mockLocations.map((l) => [l.id, l]));
   const techMap = new Map(mockTechnicians.map((t) => [t.id, t]));
+
+  // Create form state
+  const [createLocationId, setCreateLocationId] = useState("");
+  const [createJobType, setCreateJobType] = useState<JobType>("pm");
+  const [createScheduledAt, setCreateScheduledAt] = useState("");
+  const [createPriority, setCreatePriority] = useState("normal");
+
+  // Edit form state
+  const [editStatus, setEditStatus] = useState<JobStatus>("scheduled");
+  const [editTechId, setEditTechId] = useState<string>("");
+  const [editPriority, setEditPriority] = useState("normal");
+  const [editNotes, setEditNotes] = useState("");
 
   const filtered = jobs.filter((j) => {
     if (typeFilter !== "all" && j.jobType !== typeFilter) return false;
@@ -74,13 +94,60 @@ export default function JobsPage() {
 
   const selectedJob = selectedJobId ? jobs.find((j) => j.id === selectedJobId) : null;
 
+  function handleOpenEdit() {
+    if (!selectedJob) return;
+    setEditStatus(selectedJob.status);
+    setEditTechId(selectedJob.technicianId ?? "");
+    setEditPriority(selectedJob.priority ?? "normal");
+    setEditNotes(selectedJob.notes ?? "");
+    setShowEdit(true);
+  }
+
+  function handleCreate() {
+    if (!createLocationId || !createScheduledAt) return;
+    const loc = locationMap.get(createLocationId);
+    createJob.mutate(
+      {
+        locationId: createLocationId,
+        accountId: loc?.accountId ?? "",
+        jobType: createJobType,
+        scheduledAt: new Date(createScheduledAt).toISOString(),
+        priority: createPriority,
+      },
+      {
+        onSuccess: () => {
+          setShowCreate(false);
+          setCreateLocationId(""); setCreateJobType("pm"); setCreateScheduledAt(""); setCreatePriority("normal");
+        },
+      }
+    );
+  }
+
+  function handleUpdate() {
+    if (!selectedJobId) return;
+    updateJob.mutate(
+      {
+        id: selectedJobId,
+        status: editStatus,
+        technicianId: editTechId || undefined,
+        priority: editPriority,
+        notes: editNotes || undefined,
+      },
+      {
+        onSuccess: () => {
+          setShowEdit(false);
+        },
+      }
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Jobs"
         breadcrumbs={[{ label: "Operations" }, { label: "Jobs" }]}
         actions={
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
             + New Job
           </Button>
         }
@@ -201,7 +268,7 @@ export default function JobsPage() {
       </Card>
 
       {/* Job detail modal */}
-      <Modal open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJobId(null)}>
+      <Modal open={!!selectedJob && !showEdit} onOpenChange={(open) => !open && setSelectedJobId(null)}>
         <ModalContent size="lg">
           <ModalHeader>
             <ModalTitle>
@@ -260,12 +327,110 @@ export default function JobsPage() {
                 <Button variant="secondary" size="sm" onClick={() => setSelectedJobId(null)}>
                   Close
                 </Button>
-                <Button variant="primary" size="sm">
+                <Button variant="primary" size="sm" onClick={handleOpenEdit}>
                   Edit Job
                 </Button>
               </div>
             </div>
           )}
+        </ModalContent>
+      </Modal>
+
+      {/* Create job modal */}
+      <Modal open={showCreate} onOpenChange={setShowCreate}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>New Job</ModalTitle>
+          </ModalHeader>
+          <div className="space-y-3 mt-2">
+            <Select value={createLocationId} onValueChange={setCreateLocationId}>
+              <SelectTrigger label="Property *">
+                <SelectValue placeholder="Select property..." />
+              </SelectTrigger>
+              <SelectContent>
+                {mockLocations.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={createJobType} onValueChange={(v) => setCreateJobType(v as JobType)}>
+              <SelectTrigger label="Job Type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pm">PM</SelectItem>
+                <SelectItem value="sr">Service Request</SelectItem>
+                <SelectItem value="disinfecting">Disinfecting</SelectItem>
+                <SelectItem value="install">Install</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input label="Scheduled At *" type="datetime-local" value={createScheduledAt} onChange={(e) => setCreateScheduledAt(e.target.value)} />
+            <Select value={createPriority} onValueChange={setCreatePriority}>
+              <SelectTrigger label="Priority">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={createJob.isPending}>
+              {createJob.isPending ? "Creating..." : "Create Job"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit job modal */}
+      <Modal open={showEdit} onOpenChange={(open) => !open && setShowEdit(false)}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Edit Job — {selectedJob ? jobTypeLabels[selectedJob.jobType] : ""}</ModalTitle>
+            <ModalDescription>{selectedJob ? locationMap.get(selectedJob.locationId)?.name : ""}</ModalDescription>
+          </ModalHeader>
+          <div className="space-y-3 mt-2">
+            <Select value={editStatus} onValueChange={(v) => setEditStatus(v as JobStatus)}>
+              <SelectTrigger label="Status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="en_route">En Route</SelectItem>
+                <SelectItem value="on_site">On Site</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={editTechId} onValueChange={setEditTechId}>
+              <SelectTrigger label="Technician">
+                <SelectValue placeholder="Unassigned" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockTechnicians.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={editPriority} onValueChange={setEditPriority}>
+              <SelectTrigger label="Priority">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input label="Notes" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setShowEdit(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleUpdate} disabled={updateJob.isPending}>
+              {updateJob.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
     </div>

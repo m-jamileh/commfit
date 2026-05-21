@@ -4,7 +4,12 @@ export * from "./lib/utils";
 export * from "./lib/auth";
 export * from "./lib/mock-data";
 export { CommFitQueryProvider } from "./lib/query-client";
+export { CommfitClientProvider, useCommfitClient } from "./lib/commfit-client";
+export { createCommfitClient, CommfitApiError } from "@commfit/api-client";
+export type { CommfitClient, CommfitClientOptions, ApiError } from "@commfit/api-client";
 export { createClient } from "./lib/supabase";
+export { uploadJobPhoto } from "./lib/storage";
+export type { UploadJobPhotoResult, UploadJobPhotoOpts } from "./lib/storage";
 
 // Primitive components
 export * from "./components/button";
@@ -53,3 +58,4 @@ export * from "./hooks/use-quotes";
 export * from "./hooks/use-parts";
 export * from "./hooks/use-reports";
 export * from "./hooks/use-commission";
+export * from "./hooks/use-webhooks";
