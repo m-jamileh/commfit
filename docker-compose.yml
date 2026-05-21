@@ -50,10 +50,13 @@ services:
     build:
       context: .
       dockerfile: apps/worker/Dockerfile
+    ports:
+      - '3001:3001'
     environment:
       DATABASE_URL: postgresql://commfit:commfit@postgres:5432/commfit
       REDIS_URL: redis://redis:6379
       NODE_ENV: development
+      WORKER_PORT: '3001'
       SENTRY_DSN: ''
     depends_on:
       postgres:

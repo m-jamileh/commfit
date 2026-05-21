@@ -10,8 +10,9 @@ This document is the authoritative reference for every environment variable used
 2. [API Service](#api-service)
 3. [Worker Service](#worker-service)
 4. [Frontend Apps (ops, tech, customer)](#frontend-apps-ops-tech-customer)
-5. [Mock Value Conventions](#mock-value-conventions)
-6. [Secret Management Notes](#secret-management-notes)
+5. [GitHub Actions Secrets (CI/CD)](#github-actions-secrets-cicd)
+6. [Mock Value Conventions](#mock-value-conventions)
+7. [Secret Management Notes](#secret-management-notes)
 
 ---
 
@@ -91,6 +92,23 @@ Each of the three Next.js apps has an identical variable shape. Variables are se
 | customer | `@commfit-customer-api-url` | `@commfit-customer-sentry-dsn` |
 
 Shared secrets (`@commfit-supabase-url`, `@commfit-supabase-anon-key`, `@commfit-sentry-org`, `@commfit-sentry-auth-token`) are the same across all three apps.
+
+---
+
+## GitHub Actions Secrets (CI/CD)
+
+Secrets consumed exclusively by `.github/workflows/deploy.yml`. Set these in GitHub → Settings → Secrets and variables → Actions before running the deploy workflow. These are **not** runtime env vars; they are never loaded into Railway or Vercel containers.
+
+| Secret Name | Description | Set in | Required |
+|---|---|---|---|
+| `RAILWAY_TOKEN` | Railway API token used by the deploy workflow to trigger Railway builds. Generate in Railway → Account Settings → Tokens. | GitHub Actions secrets | Yes |
+| `VERCEL_TOKEN` | Vercel personal access token used by the deploy workflow. Generate in Vercel → Account → Tokens. | GitHub Actions secrets | Yes |
+| `VERCEL_ORG_ID` | Vercel team / organisation ID. Retrieved via `vercel teams ls` or the Vercel dashboard URL. | GitHub Actions secrets | Yes |
+| `VERCEL_OPS_PROJECT_ID` | Vercel project ID for `commfit-ops`. Found in Vercel project settings URL after creating the project. | GitHub Actions secrets | Yes |
+| `VERCEL_TECH_PROJECT_ID` | Vercel project ID for `commfit-tech`. | GitHub Actions secrets | Yes |
+| `VERCEL_CUSTOMER_PROJECT_ID` | Vercel project ID for `commfit-customer`. | GitHub Actions secrets | Yes |
+
+> See `infra/deploy-runbook.md` Step 6.1 for the full setup sequence.
 
 ---
 
