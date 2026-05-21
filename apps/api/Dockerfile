@@ -16,7 +16,7 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/api-client/package.json ./packages/api-client/
 COPY apps/api/package.json ./apps/api/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # ---- builder ----
 FROM deps AS builder
