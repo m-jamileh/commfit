@@ -366,6 +366,15 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - `infra/env-manifest.md` note 5 updated with `WORKER_PORT=3010` collision reminder. No source code touched.
 - Rebased cleanly onto `origin/dev` and pushed as `2f09aa6`.
 
+**Deploy fix #4 — missing `packages/db/package.json` COPY (CTO Type C, 2026-05-21, dev tip `ccd97ea`):**
+- `3662cec` (`fix(docker)`) by DevOps Engineer on `feat/m4-deploy-fix-db-package-copy`: adds `COPY --from=builder /app/packages/db/package.json ./packages/db/package.json` to the runner stage of both `apps/api/Dockerfile` and `apps/worker/Dockerfile`, immediately after the existing `packages/db/generated` COPY. One line per Dockerfile, 2 files changed, 2 insertions.
+- Root cause: `packages/db/package.json` was not copied to the runner stage, so Node couldn't resolve `@commfit/db` as a workspace module at startup (its `main` field `./generated/client/index.js` is only discoverable via the manifest). Consistent with the existing `packages/shared-types` and `packages/utils` pattern which copy both `dist/` and `package.json`.
+- Slice-boundary: only the two Dockerfiles runner stages. No source code, no env vars, no lockfile, no other infra changed.
+- AI-free: zero lockfile changes; `@anthropic-ai/sdk`/`openai` not introduced.
+- Merged to `dev` as `ccd97ea` (no-ff merge, CTO author) and pushed to `origin/dev`.
+- CI run #49: **completed / success** — https://github.com/m-jamileh/commfit/actions/runs/26204881331.
+- Tracking issue: [COM-32](/COM/issues/COM-32).
+
 ### M4 deploy (Founder-led, outstanding)
 
 **Deliverables (founder runs `infra/deploy-runbook.md`):**
