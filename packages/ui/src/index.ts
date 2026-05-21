@@ -8,6 +8,8 @@ export { CommfitClientProvider, useCommfitClient } from "./lib/commfit-client";
 export { createCommfitClient, CommfitApiError } from "@commfit/api-client";
 export type { CommfitClient, CommfitClientOptions, ApiError } from "@commfit/api-client";
 export { createClient } from "./lib/supabase";
+export { uploadJobPhoto } from "./lib/storage";
+export type { UploadJobPhotoResult, UploadJobPhotoOpts } from "./lib/storage";
 
 // Primitive components
 export * from "./components/button";
