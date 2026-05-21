@@ -5,6 +5,8 @@ export * from "./lib/auth";
 export * from "./lib/mock-data";
 export { CommFitQueryProvider } from "./lib/query-client";
 export { createClient } from "./lib/supabase";
+export { uploadJobPhoto } from "./lib/storage";
+export type { UploadJobPhotoResult, UploadJobPhotoOpts } from "./lib/storage";
 
 // Primitive components
 export * from "./components/button";
