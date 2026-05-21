@@ -138,10 +138,10 @@ Last updated: 2026-05-20 (M1 done / M2 done / M3 Backend in_review + Frontend in
 
 ## M3 — Backend ∥ Frontend
 **Owners:** Backend Engineer + Frontend Engineer (parallel)
-**Status:** in_review
+**Status:** done
 **Started:** 2026-05-20
 **Delivered:** 2026-05-21
-**Approved:** —
+**Approved:** 2026-05-20
 
 **Merge SHAs on `dev` (in order):**
 - Backend slice — `452091a` (modules/services/seeds, BE tip `8d72ca9`); OpenAPI delta merge following `e924fc3`.
