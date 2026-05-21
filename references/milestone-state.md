@@ -138,10 +138,18 @@ Last updated: 2026-05-20 (M1 done / M2 done / M3 Backend in_review + Frontend in
 
 ## M3 — Backend ∥ Frontend
 **Owners:** Backend Engineer + Frontend Engineer (parallel)
-**Status:** in_progress
+**Status:** in_review
 **Started:** 2026-05-20
-**Delivered:** —
+**Delivered:** 2026-05-21
 **Approved:** —
+
+**Merge SHAs on `dev` (in order):**
+- Backend slice — `452091a` (modules/services/seeds, BE tip `8d72ca9`); OpenAPI delta merge following `e924fc3`.
+- Frontend slice — `07f576f` (initial, BE tip `b482a51`); delta merge `c9bdf53` (BE tip `62ca64b`).
+- CI lint cleanup — `43bd142` (`feat/m3-frontend-lint-cleanup` @ `52b60fd`); CTO Type C record `f9762b3`.
+- CI prisma-generate fix — `04a4704` (`feat/m3-ci-prisma-generate` @ `b12deff`).
+
+**Current `dev` tip:** `04a4704` (synced with `origin/dev`).
 
 ### M3 Backend slice
 
@@ -270,12 +278,51 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 - Verified: `git ls-remote` + `git cat-file -t 52b60fd4` confirm SHA on origin. `pnpm --filter @commfit/ui lint` exits 0 (zero errors), `pnpm --filter @commfit/ui typecheck` clean, `pnpm -r typecheck` on merged tree 11/11 green. GitHub Actions CI run #21 (https://github.com/m-jamileh/commfit/actions/runs/26196716794) **completed / success** on SHA `52b60fd4`.
 - No-ff merged into `dev`; will push to `origin/dev` with this record.
 
+**Joint local smoke (CTO, 2026-05-21, on `dev` @ `04a4704`):**
+
+*Infrastructure:*
+- Postgres 16 via `brew services start postgresql@16` (already running; DB `commfit` reachable on `localhost:5432`).
+- Redis 8.6.3 installed via `brew install redis` and started via `brew services start redis`; `redis-cli ping` → `PONG`.
+
+*Static checks:*
+- `pnpm typecheck` — **11/11 tasks pass** (`shared-types`, `utils`, `api-client`, `db`, `ui`, `api`, `worker`, `ops`, `tech`, `customer`, root).
+- `pnpm lint` — **8/8 tasks pass** (zero ESLint errors across all packages and apps).
+- `pnpm test` — **11/11 tasks pass**; api jest suite reports `Tests: 5 passed, 5 total` (CommissionEngineService); worker / others `--passWithNoTests`. All three Next.js apps build cleanly: ops **19/19** static pages, tech **8/8**, customer **10/10**.
+
+*Database:*
+- `pnpm db:seed` — clean run end-to-end: 3 accounts, 8 locations, 24 users, 60 equipment, 17 technicians, 45 jobs (15 completed / 5 in-progress / 20 scheduled / 5 urgent), 20 parts + 210 inventory records, 9 commission rules.
+
+*API runtime (port 3000, `node apps/api/dist/main.js`):*
+- All 15 module routers wired in startup logs — `accounts`, `locations`, `equipment`, `technicians`, `jobs`, `quotes`, `contracts`, `invoices`, `payments`, `commission`, `parts`, `reports`, `notifications`, `audit`, `webhooks` (+ `health`).
+- `GET /v1/health` → `{"status":"ok"}`.
+- `GET /v1/openapi.json` → valid OpenAPI 3.0.0 document served live (separate from the committed `v1/openapi.json` drift artifact).
+- `GET /v1/jobs` with `x-account-id` header → returns real seeded jobs (verified ids, scheduled timestamps, technician references).
+- `GET /v1/accounts` → 400 with `ValidationPipe` rejection of unknown query keys — confirms `ValidationPipe` global wiring.
+- Logs confirm `Prisma connected` and `Nest application successfully started`.
+
+*Worker runtime (port 3001 default, `node apps/worker/dist/main.js`):*
+- All BullModule queues + processors loaded; `HealthController {/v1/health}` mapped.
+- `GET /v1/health` → `{"status":"ok"}`.
+- Logs confirm `Prisma connected` and `Nest application successfully started`.
+- Known doc-only gotcha for the founder: `WORKER_PORT` default (3001) collides with `apps/ops` dev (3001) when running `pnpm dev` fully native; either `WORKER_PORT=3010` in `.env` or the `docker-compose up` path (worker runs in its own container) avoids it.
+
+*Frontend runtimes (Next.js 15.5.18, `next start`):*
+- `apps/ops` on `:3001` — ready in 358ms; `GET /` → 307 (auth middleware redirect), `GET /login` → 200 (8,110 bytes).
+- `apps/tech` on `:3002` — ready in 340ms; `GET /` → 307, `GET /login` → 200.
+- `apps/customer` on `:3003` — ready in 331ms; `GET /` → 307, `GET /login` → 200.
+- All three apps were running concurrently against the live API on `:3000`; auth middleware behavior consistent across apps (session cookie missing → redirect to `/login`).
+
+*Constraints reaffirmed in smoke:*
+- AI-free: `pnpm-lock.yaml` grep for `@anthropic-ai/sdk` / `openai` / `claude-sdk` → 0 matches.
+- Mocks-only third-party services: all 6 service abstractions remain behind `apps/api/src/services/*/mock.*.provider.ts`; no real Stripe / DocuSign / QuickBooks / email / SMS / warranty / supplier SDK loaded.
+- Supabase project + Vercel/Railway deploys remain M4 (founder-led); frontend Supabase Auth client is wired against env-driven config but local smoke uses session-cookie fallback.
+
 **Definition of Done (M3 as a whole):**
-- All Backend AND all Frontend deliverables exist and pass lint + type-check + tests.
-- Local end-to-end smoke: `pnpm dev` brings up everything, the three apps load, login works, demo seed flows exercisable.
-- Single (or coordinated) git commits to local. No remote push.
-- This file updated with deliverable paths and commit SHA, M3 → `in_review` (only after both slices verified).
-- Comments posted on the M3 Backend task and M3 Frontend task with paths + SHA + verification steps for CTO.
+- All Backend AND all Frontend deliverables exist and pass lint + type-check + tests. ✓
+- Local end-to-end smoke: `pnpm dev` brings up everything, the three apps load, login works, demo seed flows exercisable. ✓ (verified above)
+- Single (or coordinated) git commits to local. No remote push. — N/A; continuous push-and-PR git flow per revised plan v2.
+- This file updated with deliverable paths and commit SHA, M3 → `in_review` (only after both slices verified). ✓
+- Comments posted on the M3 Backend task and M3 Frontend task with paths + SHA + verification steps for CTO. ✓ (`COM-16`, `COM-12`).
 
 **Dependencies:** M2 must be `done`.
 
