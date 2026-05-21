@@ -1,6 +1,5 @@
 # ---- base ----
 FROM node:22-alpine AS base
-ENV PNPM_STORE_DIR=/pnpm/store
 RUN npm install -g pnpm@9.15.4
 
 WORKDIR /app
@@ -14,7 +13,7 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/api-client/package.json ./packages/api-client/
 COPY apps/worker/package.json ./apps/worker/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # ---- builder ----
 FROM deps AS builder
