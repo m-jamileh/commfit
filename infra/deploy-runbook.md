@@ -159,6 +159,9 @@ SENTRY_TRACES_SAMPLE_RATE = 0.1
 
 ### 2.4 Verify API Health
 
+> **Railway healthcheck gotcha — explicit `0.0.0.0` bind required.**
+> Railway probes the public service interface, not loopback. Both `apps/api/src/main.ts` and `apps/worker/src/main.ts` must call `app.listen(port, '0.0.0.0')`. Using the single-argument form `app.listen(port)` causes the app to bind to `127.0.0.1` on some Nest versions, which makes Railway's healthcheck fail with "service unavailable" even though the process is running. This is already set correctly in the codebase — do not remove the second argument when editing `main.ts`.
+
 ```bash
 curl https://commfit-api.up.railway.app/v1/health
 # Expected: {"status":"ok","timestamp":"..."}
