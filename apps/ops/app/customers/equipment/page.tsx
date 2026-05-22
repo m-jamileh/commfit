@@ -1,8 +1,26 @@
 "use client";
-import { PageHeader, Card, EquipmentRow, useEquipment } from "@commfit/ui";
+import { PageHeader, Card, EquipmentRow, useEquipment, useUpdateEquipment, useCreateJob, mockEquipment } from "@commfit/ui";
 
 export default function EquipmentPage() {
   const { data: equipment = [], isLoading } = useEquipment();
+  const updateEquipment = useUpdateEquipment();
+  const createJob = useCreateJob();
+
+  function handleService(id: string) {
+    const eq = mockEquipment.find((e) => e.id === id);
+    if (!eq) return;
+    createJob.mutate({
+      locationId: eq.locationId,
+      accountId: eq.accountId,
+      jobType: "sr",
+      scheduledAt: new Date().toISOString(),
+      priority: "normal",
+    });
+  }
+
+  function handleArchive(id: string) {
+    updateEquipment.mutate({ id, status: "archived" });
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -39,6 +57,8 @@ export default function EquipmentPage() {
                   lastServiceDate: eq.lastServiceDate,
                   status: eq.status,
                 }}
+                onService={handleService}
+                onArchive={handleArchive}
               />
             ))}
           </tbody>

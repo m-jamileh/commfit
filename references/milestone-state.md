@@ -1,6 +1,6 @@
 # Milestone State
 
-Last updated: 2026-05-21 (M1 done / M2 done / M3 done / M4 in_progress — pre-flight prep merged, deploy fix #6 merged at `8e81327`, founder-led deploy outstanding)
+Last updated: 2026-05-21 (M1 done / M2 done / M3 done / M4 in_progress — deploy reached production but **close BLOCKED on M4.1 hotfix**; M4.1 in_progress — write flows are stubs across tech + customer, founder-discovered in production smoke)
 
 ## M1 — Architecture & Contracts
 **Owner:** Principal Architect
@@ -330,10 +330,16 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 
 ## M4 — Pre-launch (founder-led)
 **Owner:** Founder + CTO
-**Status:** in_progress (pre-flight prep delivered; founder-led deploy outstanding)
+**Status:** in_progress — **close BLOCKED on M4.1** (deploy reached production but write flows are stubs across tech + customer; founder-discovered in production smoke 2026-05-21)
 **Started:** 2026-05-20
 **Delivered:** —
 **Approved:** —
+
+**Blocker (2026-05-21):** Founder production-browser smoke discovered that every interactive write surface across `apps/customer` and `apps/tech` is a backend-less UI stub — modals open, form state updates, click handlers fire, modals dismiss with apparent success — but no API call is made and no data persists. Confirmed evidence on customer Submit SR (`apps/customer/app/service-requests/page.tsx`): `handleSubmit` runs `e.preventDefault() → setSubmitted(true) → setTimeout(close)` with no `fetch()`, no api-client call, no DB write. Founder confirmed the same shape on tech `Mark Done`, photo upload, pre-service checklist, and additional create/action CTAs on customer. **M4 cannot close as `done` until M4.1 completes** — see the M4.1 section below. The `dev → main` merge that already happened stays; M4.1 work merges through the same path (feat branches → dev via CTO Type C → founder PR dev→main).
+
+**Tracking issues:**
+- Founder M4-blocker comment: [COM-21](/COM/issues/COM-21#comment-5e963ee5-7cd7-4485-92ec-0d9e900d5090)
+- M4.1 hotfix tracker: see below.
 
 ### M4 pre-flight prep (DevOps Engineer, COM-23)
 
@@ -405,6 +411,40 @@ Pass 2 — OpenAPI delta (SHA `e4af65e`):
 **Dependencies:** M3 must be `done`. ✓ (Approved 2026-05-20.)
 
 **Note:** M4 is founder-driven. The CTO is available to answer questions and help diagnose deploy issues but does not execute the deploy. The founder runs the playbook in `infra/deploy-runbook.md`.
+
+---
+
+## M4.1 — Backend write wiring (hotfix, blocks M4 close)
+**Owner:** Backend Engineer + Frontend Engineer (parallel), orchestrated by CTO
+**Status:** in_progress
+**Started:** 2026-05-21
+**Delivered:** —
+**Approved:** —
+
+**Scope:** Make the M3 functional spec actually work end-to-end on the deployed stack. Wire every write/create/update/action surface on `apps/customer` and `apps/tech` (and any admin write surfaces on `apps/ops`) to real api routes that hit the deployed Supabase. Nothing more. **Explicitly out of scope:** real Supabase auth (stays M5), QA Engineer agent introduction (stays M5), new features beyond M3, performance/observability/Sentry work.
+
+**Phased execution (per founder direction, [COM-21](/COM/issues/COM-21#comment-5e963ee5-7cd7-4485-92ec-0d9e900d5090)):**
+
+1. **Phase 1 — Audit (Backend Engineer + Frontend Engineer, parallel).** Two inventories posted on the M4.1 tracker:
+   - Backend Engineer audits `apps/api/**` + `apps/worker/**` and produces a worklist of every required write/create/update/action endpoint, mapped against the M3 functional spec (Service Requests, Properties, Invoices, Contracts, Jobs/Equipment, Photos, Sign-off, Parts, etc.). For each: route + verb + DTO + persistence target + current status (exists / partial / missing).
+   - Frontend Engineer audits every interactive surface on `apps/customer` and `apps/tech` (and admin writes on `apps/ops`), producing a parallel inventory of every form/button/action and noting which handler is currently stubbed (state-only `setX(true) + setTimeout(close)`) vs which has real api-client wiring that may just be broken.
+   - CTO reconciles the two inventories into a single "what's needed / who owns each piece" list, posted on the M4.1 tracker.
+
+2. **Phase 2 — Backend implementation (Backend Engineer).** Wire missing api routes. Real DB writes against the deployed Supabase. Standard Type C verification: CI green + new endpoint exercised via curl evidence in PR description. Service abstractions stay mocks-only (no real Stripe / DocuSign / email / supplier SDKs — locked-decision).
+
+3. **Phase 3 — Frontend wiring (Frontend Engineer).** Wire form submit handlers to call real api routes via `@commfit/api-client` / typed hooks. Handle loading states, error states, success refetch (invalidate the relevant TanStack Query keys). Standard Type C verification.
+
+4. **Phase 4 — Re-smoke gate (founder, with future QA agent assistance).** Founder runs production-browser smoke covering at least: customer Submit SR, tech `Mark Done`, tech photo upload, one invoice action, one sign-off flow. Evidence: screenshots showing the new record after reload, plus network panel confirmation that real `POST/PUT` requests fired.
+
+5. **Phase 5 — Founder dev→main merge + final approval.** Standard close gate; same shape M4 close was supposed to have.
+
+**M4 close gate:** Founder transitions M4 → `done` only after M4.1 Phase 4 re-smoke passes. Standard "only the founder transitions to `done`" rule applies.
+
+**v2 skill learnings to incorporate post-M4.1 (per founder note):**
+- Milestone DoD language must explicitly distinguish *read* from *write*. "Flows exercisable" was ambiguous between viewable and create-able; future specs need per-write-surface DoD lines naming what gets created/updated and how it's verified.
+- Production-browser smoke must cover writes, not just reads — this Comm-Fit experience is the canonical "before" example for the v2 QA Engineer agent addendum.
+
+**Dependencies:** None for Phase 1 (audits start immediately). Phase 2 depends on Phase 1 reconciliation; Phase 3 depends on Phase 2 endpoint contracts; Phase 4 depends on Phase 2 + Phase 3; Phase 5 depends on Phase 4.
 
 ---
 

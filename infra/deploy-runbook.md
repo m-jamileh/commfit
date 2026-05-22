@@ -198,6 +198,36 @@ pnpm --filter @commfit/db seed
 
 This creates the demo company, demo users (Operations Manager, Technician, Customer), and baseline reference data (service types, equipment catalogue) required for the M4 smoke tests in Step 7.
 
+### 1.5 Provision Supabase Storage — `job-photos` Bucket + RLS
+
+The tech app uploads job photos directly to Supabase Storage. The API server never handles photo bytes — it only persists the resulting Storage URL. Complete this step before testing the photo upload feature.
+
+**Apply the policy SQL:**
+
+1. In the Supabase Dashboard, open your project and go to **SQL Editor → New query**.
+2. Copy the entire contents of `packages/db/migrations/storage/job-photos-policy.sql` from the repo.
+3. Paste and click **Run**. The script is idempotent — safe to re-run if needed.
+
+What the script does:
+- Creates a **private** bucket named `job-photos` (not public-read).
+- Creates an INSERT policy scoped to the authenticated user's `account_id` JWT claim.
+- Creates a SELECT policy with the same account-prefix scope.
+- Service-role key bypasses RLS automatically; no extra policy is needed for the API server.
+
+**Verify the bucket was created:**
+
+In the Supabase Dashboard → **Storage** → confirm `job-photos` appears with **Public: false**.
+
+Alternatively via the Supabase CLI (if configured locally):
+```bash
+supabase storage ls --project-ref <project-ref>
+# Expected: job-photos bucket listed
+```
+
+**Path convention:** All uploads must follow `<accountId>/<jobId>/<photoId>.<ext>` so RLS path-prefix matching works correctly.
+
+**JWT `account_id` claim prerequisite:** The policy relies on `auth.jwt() ->> 'account_id'` being present in the user's token. Confirm the Supabase Auth hook (or `app_metadata`) populates this claim for technician users. If the claim is missing, Storage uploads will be rejected with 403.
+
 ---
 
 ## Step 2: Railway Setup

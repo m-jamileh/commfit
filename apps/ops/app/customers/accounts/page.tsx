@@ -1,23 +1,62 @@
 "use client";
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { PageHeader, Card, Pill, Button, useAccounts } from "@commfit/ui";
+import {
+  PageHeader,
+  Card,
+  Pill,
+  Button,
+  Input,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalFooter,
+  useAccounts,
+  useCreateAccount,
+} from "@commfit/ui";
 
 export default function AccountsPage() {
   const [search, setSearch] = useState("");
   const { data: accounts = [], isLoading } = useAccounts();
+  const createAccount = useCreateAccount();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newState, setNewState] = useState("");
 
   const filtered = accounts.filter((a) =>
-    !search || a.name.toLowerCase().includes(search.toLowerCase()) ||
+    !search ||
+    a.name.toLowerCase().includes(search.toLowerCase()) ||
     a.billingEmail.toLowerCase().includes(search.toLowerCase())
   );
+
+  function handleCreate() {
+    if (!newName || !newEmail) return;
+    createAccount.mutate(
+      { name: newName, billingEmail: newEmail, billingPhone: newPhone || undefined, city: newCity || undefined, state: newState || undefined },
+      {
+        onSuccess: () => {
+          setShowCreate(false);
+          setNewName(""); setNewEmail(""); setNewPhone(""); setNewCity(""); setNewState("");
+        },
+      }
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Accounts"
         breadcrumbs={[{ label: "Customers" }, { label: "Accounts" }]}
-        actions={<Button variant="primary" size="sm">+ New Account</Button>}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+            + New Account
+          </Button>
+        }
       />
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -63,6 +102,29 @@ export default function AccountsPage() {
           </tbody>
         </table>
       </Card>
+
+      <Modal open={showCreate} onOpenChange={setShowCreate}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>New Account</ModalTitle>
+          </ModalHeader>
+          <div className="space-y-3 mt-2">
+            <Input label="Account Name *" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input label="Billing Email *" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+            <Input label="Phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+            <div className="flex gap-3">
+              <Input label="City" value={newCity} onChange={(e) => setNewCity(e.target.value)} className="flex-1" />
+              <Input label="State" value={newState} onChange={(e) => setNewState(e.target.value)} className="w-20" />
+            </div>
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={createAccount.isPending}>
+              {createAccount.isPending ? "Creating..." : "Create Account"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

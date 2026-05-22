@@ -90,6 +90,26 @@ export class JobsService {
     const currentJob = await this.prisma.job.findUnique({ where: { id } });
     const statusChanging = dto.status !== undefined && dto.status !== currentJob?.status;
 
+    // Shallow merge metadata so partial PATCH requests are non-destructive.
+    // equipmentDone is deep-merged one level so individual equipment can be
+    // marked done without overwriting sibling entries (COM-49).
+    let mergedMetadata: Record<string, unknown> | undefined;
+    if (dto.metadata !== undefined) {
+      const existing = (currentJob?.metadata ?? {}) as Record<string, unknown>;
+      const incoming = dto.metadata as Record<string, unknown>;
+      mergedMetadata = { ...existing, ...incoming };
+      if (
+        incoming.equipmentDone !== undefined &&
+        typeof existing.equipmentDone === 'object' &&
+        existing.equipmentDone !== null
+      ) {
+        mergedMetadata.equipmentDone = {
+          ...(existing.equipmentDone as Record<string, unknown>),
+          ...(incoming.equipmentDone as Record<string, unknown>),
+        };
+      }
+    }
+
     const job = await this.prisma.job.update({
       where: { id },
       data: {
@@ -101,10 +121,31 @@ export class JobsService {
         ...(dto.customerNotes !== undefined && { customerNotes: dto.customerNotes }),
         ...(dto.warrantyClaim !== undefined && { warrantyClaim: dto.warrantyClaim }),
         ...(dto.warrantySupplier !== undefined && { warrantySupplier: dto.warrantySupplier }),
-        ...(dto.metadata !== undefined && { metadata: dto.metadata as object }),
+        ...(mergedMetadata !== undefined && { metadata: mergedMetadata as object }),
         ...(statusChanging && { statusChangedAt: new Date() }),
       },
     });
+
+    // Emit one named audit entry per equipment marked done (fire-and-forget,
+    // same queue as AuditLogInterceptor).
+    const incomingEquipDone = mergedMetadata !== undefined
+      ? (dto.metadata as Record<string, unknown>).equipmentDone
+      : undefined;
+    if (incomingEquipDone && typeof incomingEquipDone === 'object') {
+      for (const [equipmentId, value] of Object.entries(
+        incomingEquipDone as Record<string, unknown>,
+      )) {
+        this.auditQueue
+          .add('audit-async', {
+            entityType: 'job',
+            entityId: id,
+            action: 'equipment_mark_done',
+            after: { equipmentId, ...(value as Record<string, unknown>) },
+          })
+          .catch(() => {});
+      }
+    }
+
     return this.mapToDto(job);
   }
 

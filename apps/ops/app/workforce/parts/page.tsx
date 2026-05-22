@@ -1,18 +1,56 @@
 "use client";
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { PageHeader, Card, Pill, Button, useParts } from "@commfit/ui";
+import {
+  PageHeader,
+  Card,
+  Pill,
+  Button,
+  Input,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalFooter,
+  useParts,
+  useCreatePart,
+} from "@commfit/ui";
 
 export default function PartsPage() {
   const [search, setSearch] = useState("");
   const { data: parts = [], isLoading } = useParts(search);
+  const createPart = useCreatePart();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newSku, setNewSku] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newSupplier, setNewSupplier] = useState("");
+  const [newCost, setNewCost] = useState("");
+
+  function handleCreate() {
+    if (!newSku || !newName || !newCost) return;
+    createPart.mutate(
+      { sku: newSku, name: newName, description: newDesc || undefined, supplier: newSupplier || undefined, unitCostCents: Math.round(parseFloat(newCost) * 100) },
+      {
+        onSuccess: () => {
+          setShowCreate(false);
+          setNewSku(""); setNewName(""); setNewDesc(""); setNewSupplier(""); setNewCost("");
+        },
+      }
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Parts & Inventory"
         breadcrumbs={[{ label: "Workforce" }, { label: "Parts & Inventory" }]}
-        actions={<Button variant="primary" size="sm">+ Add Part</Button>}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+            + Add Part
+          </Button>
+        }
       />
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -60,6 +98,27 @@ export default function PartsPage() {
           </tbody>
         </table>
       </Card>
+
+      <Modal open={showCreate} onOpenChange={setShowCreate}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Add Part</ModalTitle>
+          </ModalHeader>
+          <div className="space-y-3 mt-2">
+            <Input label="SKU *" value={newSku} onChange={(e) => setNewSku(e.target.value)} />
+            <Input label="Name *" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input label="Description" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+            <Input label="Supplier" value={newSupplier} onChange={(e) => setNewSupplier(e.target.value)} />
+            <Input label="Unit Cost ($) *" type="number" step="0.01" value={newCost} onChange={(e) => setNewCost(e.target.value)} />
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={createPart.isPending}>
+              {createPart.isPending ? "Adding..." : "Add Part"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

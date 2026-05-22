@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockCommissionRules } from "../lib/mock-data";
+import { useCommfitClient } from "../lib/commfit-client";
 
 export function useCommissionRules() {
   return useQuery({
@@ -12,30 +13,45 @@ export function useCommissionRules() {
   });
 }
 
+// Replaces mock — now calls POST /v1/commission/rules
 export function useCreateCommissionRule() {
-  const queryClient = useQueryClient();
+  const client = useCommfitClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (rule: { name: string; ratePct: number; jobTypeFilter?: string }) => {
-      await new Promise((r) => setTimeout(r, 200));
-      return { id: `cr-${Date.now()}`, ...rule };
-    },
+    mutationFn: (body: Record<string, unknown>) => client.commission.rules.create(body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["commission-rules"] });
+      void qc.invalidateQueries({ queryKey: ["commission-rules"] });
     },
   });
 }
 
+// Replaces mock — now calls PATCH /v1/commission/rules/:id
 export function useUpdateCommissionRule() {
-  const queryClient = useQueryClient();
+  const client = useCommfitClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      await new Promise((r) => setTimeout(r, 150));
-      const rule = mockCommissionRules.find((r) => r.id === id);
-      if (rule) (rule as { active: boolean }).active = active;
-      return { id, active };
-    },
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.commission.rules.update(id, body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["commission-rules"] });
+      void qc.invalidateQueries({ queryKey: ["commission-rules"] });
     },
+  });
+}
+
+export function useDeleteCommissionRule() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => client.commission.rules.delete(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["commission-rules"] });
+    },
+  });
+}
+
+export function useComputeCommissionPreview() {
+  const client = useCommfitClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) => client.commission.computePreview(body),
   });
 }

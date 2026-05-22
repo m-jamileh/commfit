@@ -1,6 +1,7 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockLocations } from "../lib/mock-data";
+import { useCommfitClient } from "../lib/commfit-client";
 
 export function useLocations(accountId?: string) {
   return useQuery({
@@ -22,5 +23,29 @@ export function useLocation(id: string) {
       return mockLocations.find((l) => l.id === id) ?? null;
     },
     enabled: !!id,
+  });
+}
+
+export function useCreateLocation() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) => client.locations.create(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["locations"] });
+    },
+  });
+}
+
+export function useUpdateLocation() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.locations.update(id, body),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["locations", id] });
+      void qc.invalidateQueries({ queryKey: ["locations"] });
+    },
   });
 }

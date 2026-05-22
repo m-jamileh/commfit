@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { CheckCircle2, ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   Button,
@@ -13,27 +13,47 @@ import {
   Input,
   useJobs,
   useParts,
+  useAddJobPart,
   mockLocations,
 } from "@commfit/ui";
 
 const DEMO_TECH_ID = "tech-001";
 
 export default function PartsRequestPage() {
+  return (
+    <Suspense>
+      <PartsRequestContent />
+    </Suspense>
+  );
+}
+
+function PartsRequestContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefilledJobId = searchParams.get("jobId") ?? "";
+
   const { data: jobs = [] } = useJobs({ technicianId: DEMO_TECH_ID });
   const { data: parts = [] } = useParts();
+  const addPart = useAddJobPart();
   const locMap = new Map(mockLocations.map((l) => [l.id, l]));
 
-  const [selectedJobId, setSelectedJobId] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState(prefilledJobId);
   const [selectedPartId, setSelectedPartId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [submitted, setSubmitted] = useState(false);
 
   const activeJobs = jobs.filter((j) => j.status !== "completed" && j.status !== "cancelled");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedJobId || !selectedPartId) return;
+    const part = parts.find((p) => p.id === selectedPartId);
+    await addPart.mutateAsync({
+      id: selectedJobId,
+      partId: selectedPartId,
+      quantity: parseInt(quantity, 10),
+      unitCostCents: part?.unitCostCents ?? 0,
+    });
     setSubmitted(true);
   }
 
@@ -42,10 +62,24 @@ export default function PartsRequestPage() {
       <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
         <CheckCircle2 className="h-12 w-12 text-success mb-4" />
         <h1 className="font-display text-xl font-semibold text-text-primary mb-2">Request Submitted</h1>
-        <p className="text-text-secondary mb-6">Your parts request has been logged.</p>
-        <Button variant="primary" onClick={() => { setSubmitted(false); setSelectedJobId(""); setSelectedPartId(""); setQuantity("1"); }}>
-          Submit Another
-        </Button>
+        <p className="text-text-secondary mb-6">Part added to job.</p>
+        {prefilledJobId ? (
+          <Button variant="primary" onClick={() => router.push(`/job/${prefilledJobId}`)}>
+            Back to Job
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            onClick={() => {
+              setSubmitted(false);
+              setSelectedJobId("");
+              setSelectedPartId("");
+              setQuantity("1");
+            }}
+          >
+            Submit Another
+          </Button>
+        )}
       </div>
     );
   }
@@ -110,9 +144,9 @@ export default function PartsRequestPage() {
             variant="primary"
             size="lg"
             className="w-full"
-            disabled={!selectedJobId || !selectedPartId}
+            disabled={!selectedJobId || !selectedPartId || addPart.isPending}
           >
-            Submit Request
+            {addPart.isPending ? "Submitting..." : "Submit Request"}
           </Button>
         </form>
       </div>

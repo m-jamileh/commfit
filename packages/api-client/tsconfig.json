@@ -1,6 +1,7 @@
 {
   "extends": "@commfit/config/tsconfig.base.json",
   "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "dist",

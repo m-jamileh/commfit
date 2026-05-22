@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mockJobs } from "../lib/mock-data";
+import { useCommfitClient } from "../lib/commfit-client";
 import type { JobStatus, JobType } from "@commfit/shared-types";
 
 interface JobFilters {
@@ -38,19 +39,104 @@ export function useJob(id: string) {
   });
 }
 
-export function useUpdateJobStatus() {
-  const queryClient = useQueryClient();
+export function useCreateJob() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: JobStatus }) => {
-      await new Promise((r) => setTimeout(r, 200));
-      const job = mockJobs.find((j) => j.id === id);
-      if (job) {
-        (job as { status: JobStatus }).status = status;
-      }
-      return { id, status };
-    },
+    mutationFn: (body: Record<string, unknown>) => client.jobs.create(body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+export function useUpdateJob() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.jobs.update(id, body),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+// Replaces the mock useUpdateJobStatus — now wired to the real transition endpoint
+export function useTransitionJob() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: JobStatus }) =>
+      client.jobs.transition(id, { status }),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+// Kept for backward compat with existing screen components; delegates to useTransitionJob
+export function useUpdateJobStatus() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: JobStatus }) =>
+      client.jobs.transition(id, { status }),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+export function useCompleteJob() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.jobs.complete(id, body),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+export function useAssignTechnician() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, technicianId }: { id: string; technicianId: string }) =>
+      client.jobs.assign(id, { technicianId }),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+export function useAddJobPhoto() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.jobs.addPhoto(id, body),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
+    },
+  });
+}
+
+export function useAddJobPart() {
+  const client = useCommfitClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      client.jobs.addPart(id, body),
+    onSuccess: (_data, { id }) => {
+      void qc.invalidateQueries({ queryKey: ["jobs", id] });
     },
   });
 }

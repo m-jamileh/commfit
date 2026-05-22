@@ -1,5 +1,7 @@
 "use client";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import { Pencil } from "lucide-react";
 import {
   PropertyHero,
   Tabs,
@@ -13,11 +15,19 @@ import {
   SpendChartCard,
   Card,
   Pill,
+  Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalFooter,
   useLocation,
   useEquipment,
   useJobs,
   useInvoices,
   useContracts,
+  useUpdateLocation,
+  useToast,
   type VisitCardData,
 } from "@commfit/ui";
 
@@ -25,11 +35,46 @@ export default function PropertyDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
 
-  const { data: location } = useLocation(id);
+  const { data: location, refetch: refetchLocation } = useLocation(id);
   const { data: equipment = [] } = useEquipment({ locationId: id });
   const { data: jobs = [] } = useJobs({ locationId: id });
   const { data: invoices = [] } = useInvoices();
   const { data: contracts = [] } = useContracts();
+  const updateLocation = useUpdateLocation();
+  const { toast } = useToast();
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    contactName: "",
+    contactEmail: "",
+    contactPhone: "",
+    address: "",
+  });
+
+  function openEditModal() {
+    setEditForm({
+      contactName: location?.contactName ?? "",
+      contactEmail: location?.contactEmail ?? "",
+      contactPhone: location?.contactPhone ?? "",
+      address: location?.address ?? "",
+    });
+    setShowEditModal(true);
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await updateLocation.mutateAsync({
+      id,
+      contactName: editForm.contactName || undefined,
+      contactEmail: editForm.contactEmail || undefined,
+      contactPhone: editForm.contactPhone || undefined,
+      address: editForm.address || undefined,
+    });
+    toast({ variant: "success", title: "Contact info updated" });
+    void refetchLocation();
+    setShowEditModal(false);
+    updateLocation.reset();
+  }
 
   if (!location) return <div className="p-6 text-sm text-text-muted">Loading property...</div>;
 
@@ -78,6 +123,11 @@ export default function PropertyDetailPage() {
           equipmentCount: equipment.length,
           activeContractsCount: propContracts.length,
         }}
+        actions={
+          <Button variant="secondary" size="sm" onClick={openEditModal}>
+            <Pencil className="h-3.5 w-3.5" /> Edit Contact Info
+          </Button>
+        }
       />
 
       {/* Stats row */}
@@ -118,6 +168,17 @@ export default function PropertyDetailPage() {
               <strong>{location.name}</strong> is located at {location.address}, {location.city}, {location.state} {location.zip}.
               {location.notes && ` Notes: ${location.notes}`}
             </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              {location.contactName && (
+                <div><span className="text-text-muted">Contact:</span> <span className="text-text-primary">{location.contactName}</span></div>
+              )}
+              {location.contactEmail && (
+                <div><span className="text-text-muted">Email:</span> <span className="text-text-primary">{location.contactEmail}</span></div>
+              )}
+              {location.contactPhone && (
+                <div><span className="text-text-muted">Phone:</span> <span className="text-text-primary">{location.contactPhone}</span></div>
+              )}
+            </div>
           </Card>
         </TabsContent>
 
@@ -220,6 +281,70 @@ export default function PropertyDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Contact Info modal */}
+      <Modal open={showEditModal} onOpenChange={(open) => { if (!open) { setShowEditModal(false); updateLocation.reset(); } }}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Edit Contact Info</ModalTitle>
+          </ModalHeader>
+          <form onSubmit={(e) => { void handleEditSubmit(e); }} className="space-y-4 mt-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-text-primary">Contact Name</label>
+              <input
+                className="rounded border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={editForm.contactName}
+                onChange={(e) => setEditForm((f) => ({ ...f, contactName: e.target.value }))}
+                placeholder="Sandra Kim"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-text-primary">Contact Email</label>
+              <input
+                type="email"
+                className="rounded border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={editForm.contactEmail}
+                onChange={(e) => setEditForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                placeholder="contact@property.com"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-text-primary">Contact Phone</label>
+              <input
+                type="tel"
+                className="rounded border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={editForm.contactPhone}
+                onChange={(e) => setEditForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                placeholder="214-555-0100"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-text-primary">Street Address</label>
+              <input
+                className="rounded border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={editForm.address}
+                onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
+                placeholder="123 Main St"
+              />
+            </div>
+
+            {updateLocation.isError && (
+              <p className="text-xs text-danger">
+                {(updateLocation.error as Error)?.message ?? "Update failed. Please try again."}
+              </p>
+            )}
+
+            <ModalFooter>
+              <Button type="button" variant="secondary" size="sm" onClick={() => { setShowEditModal(false); updateLocation.reset(); }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" size="sm" disabled={updateLocation.isPending}>
+                {updateLocation.isPending ? "Saving…" : "Save Changes"}
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
