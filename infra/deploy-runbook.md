@@ -198,6 +198,53 @@ pnpm --filter @commfit/db seed
 
 This creates the demo company, demo users (Operations Manager, Technician, Customer), and baseline reference data (service types, equipment catalogue) required for the M4 smoke tests in Step 7.
 
+### 1.5 Create Supabase Storage Bucket and RLS Policies
+
+The tech app uses Supabase Storage for job-site photo uploads. The bucket must be created manually and RLS policies applied before photo upload works.
+
+#### 1.5.1 Create the bucket
+
+1. In the Supabase Dashboard, go to **Storage** in the left sidebar.
+2. Click **New bucket**.
+3. Set:
+   - **Name:** `job-photos`
+   - **Public bucket:** OFF (must be private — the app generates signed URLs at read time)
+4. Click **Create bucket**.
+
+#### 1.5.2 Apply RLS policies
+
+Open **SQL Editor** in the Supabase Dashboard and run the following SQL (also committed at `packages/db/migrations/storage/job-photos-policy.sql`):
+
+```sql
+-- Allow authenticated users to upload photos
+create policy "auth_insert_job_photos" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'job-photos');
+
+-- Allow authenticated users to read / generate signed URLs
+create policy "auth_select_job_photos" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'job-photos');
+```
+
+> **M4.1 note:** During M4.1, `SKIP_AUTH=true` is set. The Supabase Storage server translates the anonymous key into the `authenticated` role, so both policies above allow uploads from the tech app's `NEXT_PUBLIC_SUPABASE_ANON_KEY`. M5 will harden this with real JWT + per-account row scoping.
+
+#### 1.5.3 Verify
+
+Run the following query in the SQL Editor to confirm both policies are in place:
+
+```sql
+select policyname, cmd, qual, with_check
+from pg_policies
+where tablename = 'objects'
+  and schemaname = 'storage'
+  and policyname in ('auth_insert_job_photos', 'auth_select_job_photos');
+```
+
+Expected: two rows — one for `INSERT`, one for `SELECT`.
+
+If photo uploads still fail, confirm `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set correctly in the Vercel environment variables for `commfit-tech`.
+
 ---
 
 ## Step 2: Railway Setup
